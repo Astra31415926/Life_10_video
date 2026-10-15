@@ -3362,9 +3362,10 @@ document.documentElement.classList.add('reel-on');
 /* ── 2. НАЛАШТУВАННЯ (пам'ятаються лише в цьому браузері) ─────── */
 var DEF={names:'Олена, Марія, Іван, Оксана, Андрій, Анна',speed:80,pause:0.8,pal:'0,1',motif:'rhomb',
   neg:false,shape:'cross',end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,cnt:3,snd:true,
-  orn:82,nameMax:160,rec:true};
+  orn:88,nameMax:160,rec:true};
 var R={},k;for(k in DEF)R[k]=DEF[k];
 try{var sv=JSON.parse(localStorage.getItem('taina_reel')||'null');if(sv)for(k in DEF)if(k in sv)R[k]=sv[k];}catch(e){}
+if(R.orn===82)R.orn=DEF.orn;   /* старе значення за замовчуванням → нове (88 %) */
 
 /* ── 3. РОЗМІТКА ──────────────────────────────────────────────── */
 var root=document.createElement('div');root.id='reel';
@@ -3400,7 +3401,7 @@ root.innerHTML=
       '<button type="button" data-s="cross">Хрестики</button>'+
       '<button type="button" data-s="square">Квадрати</button>'+
       '<button type="button" data-s="circle">Кружечки</button></div></label>'+
-    sl('rs-orn','Розмір орнаменту в кадрі, %',60,100,1)+
+    sl('rs-orn','Ширина орнаменту в кадрі, %',60,100,1)+
     sl('rs-nameMax','Розмір імені (найбільший)',80,220,5)+
     '<label>Текст фінального екрана<textarea id="rs-end" rows="2"></textarea></label>'+
     sl('rs-endDur','Тривалість фінального екрана, с',1,5,0.5)+
@@ -3474,44 +3475,61 @@ function fitName(names){
   if(mw>VW*0.9)fs*=VW*0.9/mw;
   nameFs=Math.floor(fs);
 }
-/* фінальний текст: переносимо по словах у ширину 900, не більше 5 рядків */
-function fitEnd(){
-  var fs=110, lines;
-  for(var n=0;n<30;n++){
-    g.font='700 '+fs+'px '+FAM; lines=[];
-    R.end.split('\n').forEach(function(par){
-      var cur2='';par.split(/\s+/).filter(Boolean).forEach(function(w){
-        var q=cur2?cur2+' '+w:w; if(g.measureText(q).width<=900||!cur2)cur2=q; else{lines.push(cur2);cur2=w;}});
-      lines.push(cur2);});
-    if(lines.length<=5&&lines.every(function(L){return g.measureText(L).width<=900;}))break;
-    fs=Math.round(fs*0.92);
-  }
+/* ── РОЗКЛАДКА КАДРУ (однакова на всіх екранах ролику) ──────────
+   Орнамент (його рамка) — на всю ширину мінус поля з боків (за ТЗ 6 %).
+   Нижні 20 % кадру порожні: там TikTok показує підпис і кнопки.
+   Блок «ім'я + орнамент + фінальний напис» — по центру верхніх 80 %.
+   Місце під фінальний напис зарезервоване з самого початку, тож
+   у фіналі орнамент не зсувається. */
+var L={top:0,nh:0,O:0,oy:0,ey:0,lh:0};
+function wrapEnd(fs,maxW){
+  g.font='700 '+fs+'px '+FAM; var lines=[];
+  R.end.split('\n').forEach(function(par){
+    var c2='';par.split(/\s+/).filter(Boolean).forEach(function(w){
+      var q=c2?c2+' '+w:w; if(g.measureText(q).width<=maxW||!c2)c2=q; else{lines.push(c2);c2=w;}});
+    if(c2)lines.push(c2);});
+  return lines;
+}
+function layoutFrame(){
+  var AV=VH*0.80, PADT=40, G1=46, G2=56;
+  var O=Math.round(VW*R.orn/100), nh=nameFs*1.3;
+  /* фінальний напис: великий, у ширину орнаменту, не більше 3 рядків */
+  var fs=96, lines=wrapEnd(fs,O);
+  while(fs>44&&(lines.length>3||lines.some(function(t){return g.measureText(t).width>O;}))){fs-=4;lines=wrapEnd(fs,O);}
+  var lh=Math.round(fs*1.22), eh=lines.length?lines.length*lh:0;
+  /* якщо все разом не влазить у верхні 80 % — трохи зменшуємо орнамент */
+  var total=nh+G1+O+(eh?G2+eh:0);
+  if(total>AV-PADT*2){O=Math.max(400,Math.floor(O-(total-(AV-PADT*2))));total=nh+G1+O+(eh?G2+eh:0);}
+  var top=Math.round((AV-total)/2);
+  L={top:top,nh:nh,O:O,oy:top+nh+G1,ey:top+nh+G1+O+G2,lh:lh};
   endLines=lines; endFs=fs;
 }
-/* Кадр. Група «ім'я + орнамент» трохи вище центру: внизу кадру TikTok
-   кладе підпис, праворуч — кнопки. */
+function fitEnd(){layoutFrame();}
+var endT=0;
 function paint(){
-  g.setTransform(1,0,0,1,0,0);
+  g.setTransform(1,0,0,1,0,0); g.globalAlpha=1;
   g.fillStyle='rgb('+bg.join(',')+')'; g.fillRect(0,0,VW,VH);
   g.fillStyle=fg; g.textAlign='center'; g.textBaseline='middle';
-  if(cur.end){
-    g.font='700 '+endFs+'px '+FAM;
-    var lh=endFs*1.25, y0=VH/2-90-(endLines.length-1)*lh/2;
-    endLines.forEach(function(L,i){g.fillText(L,VW/2,y0+i*lh);});
-    return;
-  }
-  var O=Math.round(VW*R.orn/100), nh=nameFs*1.3, gap=50, total=nh+gap+O;
-  var top=Math.max(40,Math.round((VH-total)/2-110));
-  var ty=top+nh/2;
+  /* ім'я */
+  var ty=L.top+L.nh/2;
   g.font='700 '+nameFs+'px '+FAM;
   if(cur.text)g.fillText(cur.text,VW/2,ty);
   if(cur.caret&&((performance.now()-t0)%1000)<550){
     var w=cur.text?g.measureText(cur.text).width:0;
     g.fillRect(VW/2+w/2+nameFs*0.06,ty-nameFs*0.42,Math.max(5,nameFs*0.07),nameFs*0.84);
   }
+  /* орнамент: ширина РАМКИ = L.O; світле поле довкола зливається з тлом */
   if(OFF.width){
+    var D=L.O*(W+10)/(W+6), x=(VW-D)/2, y=L.oy-(D-L.O)/2;
     g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
-    g.drawImage(OFF,Math.round((VW-O)/2),Math.round(top+nh+gap),O,O);
+    g.drawImage(OFF,Math.round(x),Math.round(y),Math.round(D),Math.round(D));
+  }
+  /* фінальний напис під орнаментом — плавно за 0,4 с */
+  if(cur.end){
+    g.globalAlpha=Math.min(1,(performance.now()-endT)/400);
+    g.font='700 '+endFs+'px '+FAM;
+    endLines.forEach(function(t,i){g.fillText(t,VW/2,L.ey+L.lh/2+i*L.lh);});
+    g.globalAlpha=1;
   }
 }
 /* малюємо кожен кадр — так запис іде рівно, а курсор блимає */
@@ -3605,7 +3623,8 @@ async function run(){
       await wait(150);
     }
   }
-  cur.end=true;
+  cur.text=names[names.length-1]; cur.caret=false;
+  endT=performance.now(); cur.end=true;
   await wait(R.endDur*1000);
   var blob=await recStop();
   try{if(wake)wake.release();}catch(e){}
