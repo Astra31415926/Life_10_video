@@ -3362,7 +3362,7 @@ document.documentElement.classList.add('reel-on');
 /* ── 2. НАЛАШТУВАННЯ (пам'ятаються лише в цьому браузері) ─────── */
 var DEF={names:'Олена, Марія, Іван, Оксана, Андрій, Анна',speed:80,pause:0.8,pal:'0,1',motif:'rhomb',
   neg:false,shape:'cross',end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,cnt:3,snd:true,
-  orn:88,nameMax:160,rec:true};
+  orn:88,nameMax:160,rec:true,padTop:14,padBot:20};
 var R={},k;for(k in DEF)R[k]=DEF[k];
 try{var sv=JSON.parse(localStorage.getItem('taina_reel')||'null');if(sv)for(k in DEF)if(k in sv)R[k]=sv[k];}catch(e){}
 if(R.orn===82)R.orn=DEF.orn;   /* старе значення за замовчуванням → нове (88 %) */
@@ -3402,6 +3402,8 @@ root.innerHTML=
       '<button type="button" data-s="square">Квадрати</button>'+
       '<button type="button" data-s="circle">Кружечки</button></div></label>'+
     sl('rs-orn','Ширина орнаменту в кадрі, %',60,100,1)+
+    sl('rs-padTop','Верхнє поле (пошук TikTok), %',0,25,1)+
+    sl('rs-padBot','Нижнє поле (підпис і кнопки TikTok), %',0,30,1)+
     sl('rs-nameMax','Розмір імені (найбільший)',80,220,5)+
     '<label>Текст фінального екрана<textarea id="rs-end" rows="2"></textarea></label>'+
     sl('rs-endDur','Тривалість фінального екрана, с',1,5,0.5)+
@@ -3419,7 +3421,7 @@ var cv=$('reel-cv'), g=cv.getContext('2d'), cntEl=$('reel-cnt'), setEl=$('reel-s
 
 /* заповнюємо поля */
 $('rs-names').value=R.names; $('rs-end').value=R.end;
-['speed','pause','endDur','cnt','orn','nameMax'].forEach(function(k){$('rs-'+k).value=R[k];});
+['speed','pause','endDur','cnt','orn','nameMax','padTop','padBot'].forEach(function(k){$('rs-'+k).value=R[k];});
 $('rs-pal').value=R.pal; if(!$('rs-pal').value)$('rs-pal').value=DEF.pal;
 $('rs-motif').value=R.motif; $('rs-neg').checked=!!R.neg; $('rs-snd').checked=!!R.snd; $('rs-rec').checked=!!R.rec;
 function syncShape(){Array.prototype.forEach.call($('rs-shape').children,function(b){b.classList.toggle('on',b.dataset.s===R.shape);});}
@@ -3433,7 +3435,7 @@ function parseNames(){
 }
 function readForm(){
   R.names=$('rs-names').value; R.end=$('rs-end').value;
-  ['speed','pause','endDur','cnt','orn','nameMax'].forEach(function(k){R[k]=+$('rs-'+k).value;});
+  ['speed','pause','endDur','cnt','orn','nameMax','padTop','padBot'].forEach(function(k){R[k]=+$('rs-'+k).value;});
   R.pal=$('rs-pal').value; R.motif=$('rs-motif').value; R.neg=$('rs-neg').checked;
   R.snd=$('rs-snd').checked; R.rec=$('rs-rec').checked;
 }
@@ -3441,7 +3443,7 @@ function showVals(){
   readForm();
   $('rs-speed-v').textContent=R.speed+' мс'; $('rs-pause-v').textContent=R.pause.toFixed(1)+' с';
   $('rs-endDur-v').textContent=R.endDur.toFixed(1)+' с'; $('rs-cnt-v').textContent=R.cnt+' с';
-  $('rs-orn-v').textContent=R.orn+'%'; $('rs-nameMax-v').textContent=R.nameMax+' px';
+  $('rs-orn-v').textContent=R.orn+'%'; $('rs-padTop-v').textContent=R.padTop+'%'; $('rs-padBot-v').textContent=R.padBot+'%'; $('rs-nameMax-v').textContent=R.nameMax+' px';
   var ns=parseNames(), t=0.3;
   ns.forEach(function(n,i){var L=Array.from(n).length;t+=(L*R.speed+R.pause*1000+(i<ns.length-1?L*R.speed/2+150:0))/1000;});
   t+=R.endDur;
@@ -3491,7 +3493,8 @@ function wrapEnd(fs,maxW){
   return lines;
 }
 function layoutFrame(){
-  var AV=VH*0.80, PADT=40, G1=46, G2=56;
+  /* робоча зона між верхнім і нижнім полем: зверху TikTok кладе пошук, знизу — підпис і кнопки */
+  var Z0=Math.round(VH*R.padTop/100), AV=VH*(1-R.padBot/100)-Z0, PADT=0, G1=40, G2=48;
   var O=Math.round(VW*R.orn/100), nh=nameFs*1.3;
   /* фінальний напис: великий, у ширину орнаменту, не більше 3 рядків */
   var fs=96, lines=wrapEnd(fs,O);
@@ -3500,7 +3503,7 @@ function layoutFrame(){
   /* якщо все разом не влазить у верхні 80 % — трохи зменшуємо орнамент */
   var total=nh+G1+O+(eh?G2+eh:0);
   if(total>AV-PADT*2){O=Math.max(400,Math.floor(O-(total-(AV-PADT*2))));total=nh+G1+O+(eh?G2+eh:0);}
-  var top=Math.round((AV-total)/2);
+  var top=Z0+Math.max(0,Math.round((AV-total)/2));
   L={top:top,nh:nh,O:O,oy:top+nh+G1,ey:top+nh+G1+O+G2,lh:lh};
   endLines=lines; endFs=fs;
 }
