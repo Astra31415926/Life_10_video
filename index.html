@@ -3296,48 +3296,37 @@ buildDeck();
 })();
 </script>
 <!-- ═══════════════════════════════════════════════════════════════════
-     РОЛИК ДЛЯ TIKTOK — index.html?reel=1
-     Окремий режим поверх сайту. Звичайний показ можливостей не чіпає,
-     лише бере його ж функції: build() малює орнамент, PALS — палітри.
-     Без ?reel=1 цей блок нічого не робить.
-
-     Порядок: екран налаштувань → «Старт» → великий відлік → ролик
-     (ім'я друкується по літері, орнамент росте; пауза; швидке стирання;
-     наступне ім'я) → фінальний екран.
-     Під час ролику нічого не зберігається, sessionStorage не чіпаємо,
-     дотики не зупиняють ролик. Вихід — лише перезавантаження сторінки.
+     РОЛИК ДЛЯ TIKTOK (окремий репозиторій Life_10_video)
+     Режим вмикається одразу. Генератор сайту працює як завжди, а ролик
+     малюється на ОДНОМУ полотні 1080×1920: ім'я зверху, орнамент під ним.
+     Це полотно сторінка сама записує у відеофайл (MediaRecorder):
+     після ролику — кнопки «Завантажити» / «Зберегти в Фото».
+     Захват екрана теж працює як запасний шлях.
+     Нічого не зберігається в стан сайту, дотики ролик не зупиняють.
      ═══════════════════════════════════════════════════════════════════ -->
 <style>
 html.reel-on,html.reel-on body{overflow:hidden!important;overscroll-behavior:none}
-#reel{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3vh;
+#reel{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;
   background:#0a0806;color:#fff;font-family:Inter,"Helvetica Neue",Arial,sans-serif;
-  touch-action:none;-webkit-user-select:none;user-select:none;overflow:hidden;
-  padding:calc(env(safe-area-inset-top,0px) + 5vh) 12px calc(env(safe-area-inset-bottom,0px) + 4vh)}
-#reel-name{flex:0 0 auto;height:1.35em;width:100%;display:flex;align-items:center;justify-content:center;
-  font-weight:700;line-height:1;white-space:nowrap;letter-spacing:.02em}
-#reel-name .car{display:inline-block;width:.07em;height:.85em;margin-left:.06em;background:currentColor;
-  vertical-align:-.06em;animation:reelcar 1s steps(1) infinite}
-@keyframes reelcar{50%{opacity:0}}
-#reel-stage{flex:0 0 auto;width:100%;display:flex;align-items:center;justify-content:center}
+  touch-action:none;-webkit-user-select:none;user-select:none;overflow:hidden}
 #reel-cv{display:block}
-#reel-end{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
-  padding:0 8vw;font-weight:700;line-height:1.25;white-space:pre-line}
 #reel-cnt{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
-  font-weight:800;font-size:42vmin;line-height:1}
-/* ── екран налаштувань: темний, контрастний ── */
-#reel-set{position:absolute;inset:0;z-index:2;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;
+  font-weight:800;font-size:42vmin;line-height:1;z-index:1}
+/* ── екран налаштувань і екран готового відео: темні, контрастні ── */
+#reel-set,#reel-done{position:absolute;inset:0;z-index:2;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;
   background:#16130f;color:#f2ece2;-webkit-user-select:text;user-select:text;
   padding:calc(env(safe-area-inset-top,0px) + 18px) 18px calc(env(safe-area-inset-bottom,0px) + 28px)}
-#reel-set .in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-#reel-set h1{font:800 22px/1.2 "JetBrains Mono",monospace;letter-spacing:.04em;color:#f0d9a8;margin:4px 0 0}
-#reel-set .sub{font-size:13.5px;color:#cbbfae;line-height:1.5}
+#reel-done{display:none;z-index:3}
+#reel-set .in,#reel-done .in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+#reel h1{font:800 22px/1.2 "JetBrains Mono",monospace;letter-spacing:.04em;color:#f0d9a8;margin:4px 0 0}
+#reel .sub{font-size:13.5px;color:#cbbfae;line-height:1.5}
 #reel-set label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:600;color:#e8dcc8}
 #reel-set .h{display:flex;justify-content:space-between;gap:10px}
 #reel-set .h b{color:#f0d9a8;font-variant-numeric:tabular-nums}
-#reel-set textarea,#reel-set select,#reel-set input[type=text]{width:100%;background:#241f19;color:#f7f1e6;
+#reel-set textarea,#reel-set select{width:100%;background:#241f19;color:#f7f1e6;
   border:1px solid #5a4e40;border-radius:11px;padding:12px;font:16px Inter,Arial,sans-serif;outline:none}
 #reel-set textarea{resize:vertical;min-height:70px}
-#reel-set textarea:focus,#reel-set select:focus,#reel-set input[type=text]:focus{border-color:#c9a876}
+#reel-set textarea:focus,#reel-set select:focus{border-color:#c9a876}
 #reel-set input[type=range]{width:100%;height:34px;accent-color:#c9a876}
 #reel-set .seg{display:flex;border:1px solid #5a4e40;border-radius:11px;overflow:hidden}
 #reel-set .seg button{flex:1;border:0;border-right:1px solid #5a4e40;background:#241f19;color:#e8dcc8;
@@ -3345,23 +3334,25 @@ html.reel-on,html.reel-on body{overflow:hidden!important;overscroll-behavior:non
 #reel-set .seg button:last-child{border-right:0}
 #reel-set .seg button.on{background:#c9a876;color:#16130f}
 #reel-set .chk{flex-direction:row;align-items:center;gap:10px}
-#reel-set .chk input{width:22px;height:22px;accent-color:#c9a876}
-#reel-set .dur{font-size:14px;color:#e8dcc8}
-#reel-set .dur b{color:#f0d9a8}
-#reel-go{height:60px;border:0;border-radius:14px;background:#c9a876;color:#16130f;cursor:pointer;
-  font:800 19px "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase}
-#reel-set .tip{font-size:12.5px;color:#b9ad9b;line-height:1.55}
+#reel-set .chk input{width:22px;height:22px;accent-color:#c9a876;flex:0 0 auto}
+#reel-set .chk small{display:block;font-weight:400;font-size:12px;color:#b9ad9b;margin-top:2px}
+#reel .dur{font-size:14px;color:#e8dcc8}
+#reel .dur b{color:#f0d9a8}
+#reel .btn{min-height:58px;border:0;border-radius:14px;background:#c9a876;color:#16130f;cursor:pointer;
+  font:800 17px "JetBrains Mono",monospace;letter-spacing:.05em;display:flex;align-items:center;justify-content:center;
+  text-decoration:none;padding:0 14px}
+#reel .btn.alt{background:transparent;color:#f2ece2;border:1px solid #c9a876}
+#reel-go{font-size:19px!important;letter-spacing:.08em}
+#reel .tip{font-size:12.5px;color:#b9ad9b;line-height:1.55}
+#reel-prev{display:block;max-height:46vh;max-width:100%;margin:0 auto;border-radius:10px;background:#000}
 </style>
 <script>
 (function(){
 'use strict';
-/* окремий репозиторій: режим ролику вмикається завжди, без ?reel=1 */
 var $=function(id){return document.getElementById(id);};
+var VW=1080, VH=1920, FAM='Inter,"Helvetica Neue",Arial,sans-serif';
 
-/* ── 1. ВИМИКАЄМО ЗАЙВЕ ─────────────────────────────────────────
-   Показ можливостей — назавжди; підпис — щоб не рахував плакат на
-   кожній літері (налаштування підпису при цьому НЕ перезаписуються);
-   isDemo=true — щоб build() нічого не зберігав. */
+/* ── 1. ВИМИКАЄМО ЗАЙВЕ: показ можливостей, підпис, збереження ── */
 try{tourDead=true;tourRun++;spotOff();}catch(e){}
 document.body.classList.remove('ghost');
 if(window.TainaSig)TainaSig.settings.on=false;
@@ -3370,8 +3361,9 @@ document.documentElement.classList.add('reel-on');
 
 /* ── 2. НАЛАШТУВАННЯ (пам'ятаються лише в цьому браузері) ─────── */
 var DEF={names:'Олена, Марія, Іван, Оксана, Андрій, Анна',speed:80,pause:0.8,pal:'0,1',motif:'rhomb',
-  neg:false,shape:'cross',end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,cnt:3,snd:true};
-var R={};for(var k in DEF)R[k]=DEF[k];
+  neg:false,shape:'cross',end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,cnt:3,snd:true,
+  orn:82,nameMax:160,rec:true};
+var R={},k;for(k in DEF)R[k]=DEF[k];
 try{var sv=JSON.parse(localStorage.getItem('taina_reel')||'null');if(sv)for(k in DEF)if(k in sv)R[k]=sv[k];}catch(e){}
 
 /* ── 3. РОЗМІТКА ──────────────────────────────────────────────── */
@@ -3384,13 +3376,20 @@ var motOpts=MOTIFS.map(function(m){return '<option value="'+m.k+'">'+m.uk+'</opt
 function sl(id,t,min,max,step){return '<label><span class="h"><span>'+t+'</span><b id="'+id+'-v"></b></span>'+
   '<input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="'+step+'"></label>';}
 root.innerHTML=
-  '<div id="reel-name"></div>'+
-  '<div id="reel-stage"><canvas id="reel-cv"></canvas></div>'+
-  '<div id="reel-end"></div>'+
+  '<canvas id="reel-cv" width="'+VW+'" height="'+VH+'"></canvas>'+
   '<div id="reel-cnt"></div>'+
+  '<div id="reel-done"><div class="in">'+
+    '<h1>Відео готове</h1>'+
+    '<div class="sub" id="rd-info"></div>'+
+    '<video id="reel-prev" playsinline muted loop autoplay></video>'+
+    '<button type="button" class="btn" id="rd-share">📲 Зберегти в Фото / поділитися</button>'+
+    '<a class="btn" id="rd-dl">⤓ Завантажити файл</a>'+
+    '<button type="button" class="btn alt" id="rd-again">↺ Ще раз</button>'+
+    '<div class="tip" id="rd-tip"></div>'+
+  '</div></div>'+
   '<div id="reel-set"><div class="in">'+
     '<h1>TAINA · Ролик</h1>'+
-    '<div class="sub">Імена друкуються по літері, орнамент росте наживо. Вертикально, на весь екран.</div>'+
+    '<div class="sub">Імена друкуються по літері, орнамент росте наживо. Відео 1080×1920 сторінка записує сама.</div>'+
     '<label>Імена (через кому)<textarea id="rs-names" rows="2" spellcheck="false"></textarea></label>'+
     sl('rs-speed','Швидкість друку, мс на літеру',40,200,5)+
     sl('rs-pause','Пауза на готовому орнаменті, с',0.3,3,0.1)+
@@ -3401,26 +3400,29 @@ root.innerHTML=
       '<button type="button" data-s="cross">Хрестики</button>'+
       '<button type="button" data-s="square">Квадрати</button>'+
       '<button type="button" data-s="circle">Кружечки</button></div></label>'+
+    sl('rs-orn','Розмір орнаменту в кадрі, %',60,100,1)+
+    sl('rs-nameMax','Розмір імені (найбільший)',80,220,5)+
     '<label>Текст фінального екрана<textarea id="rs-end" rows="2"></textarea></label>'+
     sl('rs-endDur','Тривалість фінального екрана, с',1,5,0.5)+
-    sl('rs-cnt','Відлік перед стартом, с',3,10,1)+
-    '<label class="chk"><input type="checkbox" id="rs-snd">Звук клавіш</label>'+
+    sl('rs-cnt','Відлік перед стартом, с',1,10,1)+
+    '<label class="chk"><input type="checkbox" id="rs-rec"><span>Записати відео у файл<small>після ролику з\'являться кнопки «Зберегти»</small></span></label>'+
+    '<label class="chk"><input type="checkbox" id="rs-snd"><span>Звук клавіш<small>лише в динаміку, у файл не потрапляє</small></span></label>'+
     '<div class="dur" id="rs-dur"></div>'+
-    '<button type="button" id="reel-go">▶ Старт</button>'+
-    '<div class="tip">Порада: спершу ввімкни запис екрана, тоді натисни «Старт» — зайвий початок обріжеш у TikTok. '+
-    'Дотики під час ролику нічого не зупиняють. Вийти — оновити сторінку.</div>'+
+    '<button type="button" class="btn" id="reel-go">▶ Старт</button>'+
+    '<div class="tip">Під час запису не виходь зі сторінки і не блокуй телефон — інакше відео зупиниться. '+
+    'Дотики до екрана ролик не зупиняють.</div>'+
   '</div></div>';
 document.body.appendChild(root);
 
-var nameEl=$('reel-name'), stage=$('reel-stage'), cv=$('reel-cv'), endEl=$('reel-end'), cntEl=$('reel-cnt'), setEl=$('reel-set');
+var cv=$('reel-cv'), g=cv.getContext('2d'), cntEl=$('reel-cnt'), setEl=$('reel-set'), doneEl=$('reel-done');
 
 /* заповнюємо поля */
 $('rs-names').value=R.names; $('rs-end').value=R.end;
-$('rs-speed').value=R.speed; $('rs-pause').value=R.pause; $('rs-endDur').value=R.endDur; $('rs-cnt').value=R.cnt;
+['speed','pause','endDur','cnt','orn','nameMax'].forEach(function(k){$('rs-'+k).value=R[k];});
 $('rs-pal').value=R.pal; if(!$('rs-pal').value)$('rs-pal').value=DEF.pal;
-$('rs-motif').value=R.motif; $('rs-neg').checked=!!R.neg; $('rs-snd').checked=!!R.snd;
+$('rs-motif').value=R.motif; $('rs-neg').checked=!!R.neg; $('rs-snd').checked=!!R.snd; $('rs-rec').checked=!!R.rec;
 function syncShape(){Array.prototype.forEach.call($('rs-shape').children,function(b){b.classList.toggle('on',b.dataset.s===R.shape);});}
-$('rs-shape').onclick=function(e){var b=e.target.closest('button');if(!b)return;R.shape=b.dataset.s;syncShape();};
+$('rs-shape').onclick=function(e){var b=e.target.closest('button');if(!b)return;R.shape=b.dataset.s;syncShape();showVals();};
 syncShape();
 
 /* імена: через кому, не довші за ліміт сайту (100 байт) */
@@ -3430,75 +3432,146 @@ function parseNames(){
 }
 function readForm(){
   R.names=$('rs-names').value; R.end=$('rs-end').value;
-  R.speed=+$('rs-speed').value; R.pause=+$('rs-pause').value; R.endDur=+$('rs-endDur').value; R.cnt=+$('rs-cnt').value;
-  R.pal=$('rs-pal').value; R.motif=$('rs-motif').value; R.neg=$('rs-neg').checked; R.snd=$('rs-snd').checked;
+  ['speed','pause','endDur','cnt','orn','nameMax'].forEach(function(k){R[k]=+$('rs-'+k).value;});
+  R.pal=$('rs-pal').value; R.motif=$('rs-motif').value; R.neg=$('rs-neg').checked;
+  R.snd=$('rs-snd').checked; R.rec=$('rs-rec').checked;
 }
 function showVals(){
   readForm();
   $('rs-speed-v').textContent=R.speed+' мс'; $('rs-pause-v').textContent=R.pause.toFixed(1)+' с';
   $('rs-endDur-v').textContent=R.endDur.toFixed(1)+' с'; $('rs-cnt-v').textContent=R.cnt+' с';
-  /* орієнтовна тривалість ролику (без відліку) */
-  var ns=parseNames(), t=0;
-  ns.forEach(function(n,i){var L=Array.from(n).length;t+=L*R.speed+R.pause*1000+(i<ns.length-1?L*R.speed/2+150:0);});
-  t+=R.endDur*1000;
-  $('rs-dur').innerHTML='Тривалість ролика ≈ <b>'+(t/1000).toFixed(1)+' с</b> · імен: <b>'+ns.length+'</b>';
+  $('rs-orn-v').textContent=R.orn+'%'; $('rs-nameMax-v').textContent=R.nameMax+' px';
+  var ns=parseNames(), t=0.3;
+  ns.forEach(function(n,i){var L=Array.from(n).length;t+=(L*R.speed+R.pause*1000+(i<ns.length-1?L*R.speed/2+150:0))/1000;});
+  t+=R.endDur;
+  $('rs-dur').innerHTML='Тривалість ролика ≈ <b>'+t.toFixed(1)+' с</b> · імен: <b>'+ns.length+'</b>';
 }
 setEl.addEventListener('input',showVals); setEl.addEventListener('change',showVals);
-$('rs-shape').addEventListener('click',showVals);
 showVals();
 
-/* ── 4. МАЛЮВАННЯ ─────────────────────────────────────────────────
-   Тло екрана = поле довкола коду (його ж колір), тому орнамент
-   зливається з екраном. Ім'я — чорне або біле, що контрастніше. */
+/* ── 4. ПОЛОТНО 1080×1920 ─────────────────────────────────────────
+   Тло = поле довкола коду, тож орнамент зливається з кадром.
+   Ім'я — чорне або біле, що контрастніше до тла. */
 var bg=[10,8,6], fg='#fff';
 function relL(a){return a.map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);})
   .reduce(function(s,v,i){return s+v*[.2126,.7152,.0722][i];},0);}
 function setBg(){
   if(!OFF.width)return;
   var d=OCTX.getImageData(1,1,1,1).data; bg=[d[0],d[1],d[2]];
-  var L=relL(bg), cW=1.05/(L+.05), cB=(L+.05)/.05;
-  fg=cB>=cW?'#111':'#fff';
-  root.style.background='rgb('+bg.join(',')+')'; root.style.color=fg;
+  var L=relL(bg); fg=((L+.05)/.05>=1.05/(L+.05))?'#111':'#fff';
+  root.style.background='rgb('+bg.join(',')+')'; cntEl.style.color=fg;
 }
-function draw(){
-  /* орнамент — найбільший квадрат, що лишається під іменем */
-  var cs=getComputedStyle(root),w=root.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),
-      h=root.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-nameEl.offsetHeight-parseFloat(cs.rowGap||0),
-      s=Math.max(10,Math.floor(Math.min(w,h)));
-  var dpr=Math.min(3,window.devicePixelRatio||1),px=Math.round(s*dpr);
-  if(cv.width!==px){cv.width=cv.height=px;cv.style.width=cv.style.height=s+'px';}
-  var g=cv.getContext('2d');
-  g.fillStyle='rgb('+bg.join(',')+')';g.fillRect(0,0,px,px);
-  if(!OFF.width)return;
-  g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
-  g.drawImage(OFF,0,0,px,px);
+function fitCv(){
+  var s=Math.min(innerWidth/VW,innerHeight/VH);
+  cv.style.width=Math.floor(VW*s)+'px'; cv.style.height=Math.floor(VH*s)+'px';
 }
-function esc(t){return t.replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
-function setText(t,caret){
-  D.single=t; build(); setBg(); draw();
-  nameEl.innerHTML=esc(t)+(caret?'<span class="car"></span>':'');
-}
-/* розмір імені: найдовше ім'я влазить у 92% ширини */
-var mctx=document.createElement('canvas').getContext('2d');
-function fitName(names){
-  var maxW=root.clientWidth*0.92, fs=Math.min(innerWidth*0.17,140), FAM='700 '+'{s}px Inter,"Helvetica Neue",Arial,sans-serif';
-  mctx.font=FAM.replace('{s}',fs);
-  var mw=0;names.forEach(function(n){mw=Math.max(mw,mctx.measureText(n).width+fs*0.15);});
-  if(mw>maxW)fs*=maxW/mw;
-  nameEl.style.fontSize=Math.floor(fs)+'px';
-  endEl.style.fontSize=Math.floor(Math.min(innerWidth*0.09,64))+'px';
-  draw();
-}
-addEventListener('resize',function(){if(!setEl.parentNode||setEl.style.display==='none')draw();});
+addEventListener('resize',fitCv); fitCv();
 
-/* ── 5. ЗАСТОСУВАТИ ВИГЛЯД ────────────────────────────────────── */
+var cur={text:'',caret:false,end:false}, nameFs=160, endLines=[], endFs=100, t0=0;
+function fitName(names){
+  var fs=R.nameMax; g.font='700 '+fs+'px '+FAM;
+  var mw=0;names.forEach(function(n){mw=Math.max(mw,g.measureText(n).width+fs*0.2);});
+  if(mw>VW*0.9)fs*=VW*0.9/mw;
+  nameFs=Math.floor(fs);
+}
+/* фінальний текст: переносимо по словах у ширину 900, не більше 5 рядків */
+function fitEnd(){
+  var fs=110, lines;
+  for(var n=0;n<30;n++){
+    g.font='700 '+fs+'px '+FAM; lines=[];
+    R.end.split('\n').forEach(function(par){
+      var cur2='';par.split(/\s+/).filter(Boolean).forEach(function(w){
+        var q=cur2?cur2+' '+w:w; if(g.measureText(q).width<=900||!cur2)cur2=q; else{lines.push(cur2);cur2=w;}});
+      lines.push(cur2);});
+    if(lines.length<=5&&lines.every(function(L){return g.measureText(L).width<=900;}))break;
+    fs=Math.round(fs*0.92);
+  }
+  endLines=lines; endFs=fs;
+}
+/* Кадр. Група «ім'я + орнамент» трохи вище центру: внизу кадру TikTok
+   кладе підпис, праворуч — кнопки. */
+function paint(){
+  g.setTransform(1,0,0,1,0,0);
+  g.fillStyle='rgb('+bg.join(',')+')'; g.fillRect(0,0,VW,VH);
+  g.fillStyle=fg; g.textAlign='center'; g.textBaseline='middle';
+  if(cur.end){
+    g.font='700 '+endFs+'px '+FAM;
+    var lh=endFs*1.25, y0=VH/2-90-(endLines.length-1)*lh/2;
+    endLines.forEach(function(L,i){g.fillText(L,VW/2,y0+i*lh);});
+    return;
+  }
+  var O=Math.round(VW*R.orn/100), nh=nameFs*1.3, gap=50, total=nh+gap+O;
+  var top=Math.max(40,Math.round((VH-total)/2-110));
+  var ty=top+nh/2;
+  g.font='700 '+nameFs+'px '+FAM;
+  if(cur.text)g.fillText(cur.text,VW/2,ty);
+  if(cur.caret&&((performance.now()-t0)%1000)<550){
+    var w=cur.text?g.measureText(cur.text).width:0;
+    g.fillRect(VW/2+w/2+nameFs*0.06,ty-nameFs*0.42,Math.max(5,nameFs*0.07),nameFs*0.84);
+  }
+  if(OFF.width){
+    g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
+    g.drawImage(OFF,Math.round((VW-O)/2),Math.round(top+nh+gap),O,O);
+  }
+}
+/* малюємо кожен кадр — так запис іде рівно, а курсор блимає */
+var raf=0;
+function loop(){paint();raf=requestAnimationFrame(loop);}
+
+function setText(t,caret){D.single=t; build(); setBg(); cur.text=t; cur.caret=caret;}
+
+/* ── 5. ЗАПИС У ФАЙЛ ───────────────────────────────────────────────
+   MP4 там, де браузер уміє (iPhone, свіжий Chrome), інакше WebM. */
+var rec=null, chunks=[], mime='';
+function pickMime(){
+  if(!window.MediaRecorder||!cv.captureStream)return null;
+  var L=['video/mp4;codecs=avc1.640028','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  for(var i=0;i<L.length;i++){try{if(MediaRecorder.isTypeSupported(L[i]))return L[i];}catch(e){}}
+  return '';
+}
+function recStart(){
+  rec=null; if(!R.rec)return;
+  var m=pickMime(); if(m===null)return;
+  try{
+    var st=cv.captureStream(30), opt={videoBitsPerSecond:12000000}; if(m)opt.mimeType=m;
+    rec=new MediaRecorder(st,opt); chunks=[];
+    rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);};
+    rec.start(250); mime=rec.mimeType||m||'video/webm';
+  }catch(e){rec=null;}
+}
+function recStop(){
+  return new Promise(function(res){
+    if(!rec||rec.state==='inactive')return res(null);
+    rec.onstop=function(){res(chunks.length?new Blob(chunks,{type:mime.split(';')[0]}):null);};
+    try{rec.stop();}catch(e){res(null);}
+  });
+}
+function stamp(){var d=new Date(),p=function(n){return String(n).padStart(2,'0');};
+  return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes());}
+function showDone(blob){
+  var mp4=/mp4/.test(blob.type), ext=mp4?'mp4':'webm', name='taina-reel-'+stamp()+'.'+ext;
+  var url=URL.createObjectURL(blob), file=null;
+  try{file=new File([blob],name,{type:blob.type});}catch(e){}
+  $('reel-prev').src=url;
+  $('rd-info').innerHTML='Формат <b>'+ext.toUpperCase()+'</b>, 1080×1920, '+(blob.size/1048576).toFixed(1)+' МБ';
+  var dl=$('rd-dl'); dl.href=url; dl.download=name;
+  var canShare=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}));
+  $('rd-share').style.display=canShare?'':'none';
+  $('rd-share').onclick=function(){navigator.share({files:[file]}).catch(function(){});};
+  $('rd-again').onclick=function(){location.reload();};
+  $('rd-tip').textContent=mp4
+    ?'На iPhone: «Зберегти в Фото» → у меню обери «Зберегти відео». Далі публікуй у TikTok як звичайне відео.'
+    :'Формат WebM: TikTok на комп\'ютері (tiktok.com/upload) його приймає. Щоб отримати MP4, запиши в Safari або в новішому Chrome.';
+  doneEl.style.display='block';
+}
+
+/* ── 6. ВИГЛЯД І СЦЕНАРІЙ ─────────────────────────────────────── */
 function applyLook(){
   var pg=R.pal.split(',').map(Number);
   if(PALS[pg[0]]&&PALS[pg[0]].items[pg[1]]){palG=pg[0];palI=pg[1];}
   motif=PAL().mono?'none':R.motif; motifK=4; invert=!!R.neg;
   shape=R.shape; setLayers(1);
 }
-
 var wait=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
 var wake=null;
 async function run(){
@@ -3506,20 +3579,22 @@ async function run(){
   var names=parseNames(); if(!names.length)names=DEF.names.split(',').map(function(s){return s.trim();});
   try{localStorage.setItem('taina_reel',JSON.stringify(R));}catch(e){}
   try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen');}catch(e){}
-  if(R.snd)ac();                       /* звук дозволено лише після дотику — він щойно був */
+  if(R.snd)ac();
   applyLook();
   /* колір тла заздалегідь — з першого імені */
   D.single=names[0]; build(); setBg(); D.single=''; build();
-  setEl.style.display='none';
-  nameEl.innerHTML=''; draw();
-  fitName(names);
-  if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;fitName(names);}catch(e){}}
+  try{if(document.fonts&&document.fonts.load)await document.fonts.load('700 100px Inter');}catch(e){}
+  fitName(names); fitEnd();
+  cur={text:'',caret:false,end:false}; t0=performance.now();
+  setEl.style.display='none'; loop();
 
-  /* відлік */
+  /* відлік — поверх полотна, у файл не потрапляє */
   cntEl.style.display='flex';
   for(var c=R.cnt;c>0;c--){cntEl.textContent=c;if(R.snd)tone(c===1?880:660,.08,.05);await wait(1000);}
   cntEl.style.display='none';
 
+  recStart();
+  cur.caret=true; t0=performance.now(); await wait(300);
   for(var i=0;i<names.length;i++){
     var ch=Array.from(names[i]);
     for(var j=1;j<=ch.length;j++){setText(ch.slice(0,j).join(''),true);if(R.snd)typeClick();await wait(R.speed);}
@@ -3530,12 +3605,12 @@ async function run(){
       await wait(150);
     }
   }
-  /* фінальний екран */
-  nameEl.style.visibility='hidden'; stage.style.visibility='hidden';
-  endEl.textContent=R.end; endEl.style.display='flex';
+  cur.end=true;
   await wait(R.endDur*1000);
-  /* далі екран лишається як є — запис зупиняєш сам */
+  var blob=await recStop();
   try{if(wake)wake.release();}catch(e){}
+  if(blob)showDone(blob);
+  /* без запису екран лишається на фінальному тексті — для захвату екрана */
 }
 $('reel-go').onclick=function(){this.disabled=true;run();};
 })();
