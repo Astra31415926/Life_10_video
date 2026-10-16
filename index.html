@@ -3296,12 +3296,12 @@ buildDeck();
 })();
 </script>
 <!-- ═══════════════════════════════════════════════════════════════════
-     РОЛИК ДЛЯ TIKTOK (окремий репозиторій Life_10_video)
-     Режим вмикається одразу. Генератор сайту працює як завжди, а ролик
-     малюється на ОДНОМУ полотні 1080×1920: ім'я зверху, орнамент під ним.
-     Це полотно сторінка сама записує у відеофайл (MediaRecorder):
-     після ролику — кнопки «Завантажити» / «Зберегти в Фото».
-     Захват екрана теж працює як запасний шлях.
+     ЛАБОРАТОРІЯ РОЛИКІВ (окремий репозиторій Life_10_video)
+     Генератор сайту працює як завжди, а ролик малюється на ОДНОМУ полотні
+     і сторінка сама записує його у відеофайл (MediaRecorder).
+     Формати: TikTok 9:16 · YouTube Shorts 9:16 · YouTube 16:9.
+     Символ # у блоці імен → у цьому блоці поруч з орнаментом з'являється
+     QR-код того самого тексту. У блоці без # QR плавно зникає.
      Нічого не зберігається в стан сайту, дотики ролик не зупиняють.
      ═══════════════════════════════════════════════════════════════════ -->
 <style>
@@ -3312,30 +3312,50 @@ html.reel-on,html.reel-on body{overflow:hidden!important;overscroll-behavior:non
 #reel-cv{display:block}
 #reel-cnt{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   font-weight:800;font-size:42vmin;line-height:1;z-index:1}
-/* ── екран налаштувань і екран готового відео: темні, контрастні ── */
 #reel-set,#reel-done{position:absolute;inset:0;z-index:2;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;
   background:#16130f;color:#f2ece2;-webkit-user-select:text;user-select:text;
-  padding:calc(env(safe-area-inset-top,0px) + 18px) 18px calc(env(safe-area-inset-bottom,0px) + 28px)}
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 28px)}
 #reel-done{display:none;z-index:3}
-#reel-set .in,#reel-done .in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+#reel-done .in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+#reel-set .wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+#reel-set .pv{position:sticky;top:-14px;z-index:1;background:#16130f;padding:6px 0 10px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;border-bottom:1px solid #3a3229}
+#rs-pv{display:block;max-width:100%;max-height:34vh;border-radius:6px;box-shadow:0 0 0 1px #5a4e40}
+#reel-set .pvcap{font-size:12px;color:#b9ad9b;text-align:center}
+#reel-set .ctl{display:flex;flex-direction:column;gap:16px}
+@media (min-width:900px){
+  #reel-set .wrap{flex-direction:row;align-items:flex-start;gap:28px}
+  #reel-set .pv{flex:0 0 46%;top:0;border-bottom:0;padding-top:0}
+  #rs-pv{max-height:86vh}
+  #reel-set .ctl{flex:1 1 auto}
+}
 #reel h1{font:800 22px/1.2 "JetBrains Mono",monospace;letter-spacing:.04em;color:#f0d9a8;margin:4px 0 0}
+#reel h2{font:800 13px/1.2 "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:#c9a876;
+  margin:8px 0 -4px;padding-top:12px;border-top:1px solid #3a3229}
 #reel .sub{font-size:13.5px;color:#cbbfae;line-height:1.5}
 #reel-set label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:600;color:#e8dcc8}
 #reel-set .h{display:flex;justify-content:space-between;gap:10px}
 #reel-set .h b{color:#f0d9a8;font-variant-numeric:tabular-nums}
-#reel-set textarea,#reel-set select{width:100%;background:#241f19;color:#f7f1e6;
+#reel-set textarea,#reel-set select,#reel-set input[type=text]{width:100%;background:#241f19;color:#f7f1e6;
   border:1px solid #5a4e40;border-radius:11px;padding:12px;font:16px Inter,Arial,sans-serif;outline:none}
-#reel-set textarea{resize:vertical;min-height:70px}
-#reel-set textarea:focus,#reel-set select:focus{border-color:#c9a876}
+#reel-set textarea{resize:vertical;min-height:64px}
+#reel-set textarea:focus,#reel-set select:focus,#reel-set input[type=text]:focus{border-color:#c9a876}
 #reel-set input[type=range]{width:100%;height:34px;accent-color:#c9a876}
-#reel-set .seg{display:flex;border:1px solid #5a4e40;border-radius:11px;overflow:hidden}
-#reel-set .seg button{flex:1;border:0;border-right:1px solid #5a4e40;background:#241f19;color:#e8dcc8;
-  font:700 14px Inter,Arial,sans-serif;padding:13px 4px;cursor:pointer}
+#reel-set .seg{display:flex;flex-wrap:wrap;border:1px solid #5a4e40;border-radius:11px;overflow:hidden}
+#reel-set .seg button{flex:1 1 0;min-width:0;border:0;border-right:1px solid #5a4e40;background:#241f19;color:#e8dcc8;
+  font:700 13.5px/1.25 Inter,Arial,sans-serif;padding:12px 4px;cursor:pointer}
 #reel-set .seg button:last-child{border-right:0}
 #reel-set .seg button.on{background:#c9a876;color:#16130f}
 #reel-set .chk{flex-direction:row;align-items:center;gap:10px}
 #reel-set .chk input{width:22px;height:22px;accent-color:#c9a876;flex:0 0 auto}
-#reel-set .chk small{display:block;font-weight:400;font-size:12px;color:#b9ad9b;margin-top:2px}
+#reel-set small{display:block;font-weight:400;font-size:12px;color:#b9ad9b;margin-top:2px;line-height:1.45}
+#reel-set code{background:#2c261f;color:#f0d9a8;padding:1px 6px;border-radius:5px;font:700 13px "JetBrains Mono",monospace}
+/* палітри — справжні мініатюри орнаменту */
+#rs-pals{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+#rs-pals button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px 9px;cursor:pointer;
+  background:#241f19;border:2px solid #3a3229;border-radius:12px;color:#e8dcc8;font:600 12px/1.25 Inter,Arial,sans-serif}
+#rs-pals button.on{border-color:#f0d9a8;background:#2f281f;color:#fff}
+#rs-pals canvas{width:72px;height:72px;border-radius:6px;display:block}
 #reel .dur{font-size:14px;color:#e8dcc8}
 #reel .dur b{color:#f0d9a8}
 #reel .btn{min-height:58px;border:0;border-radius:14px;background:#c9a876;color:#16130f;cursor:pointer;
@@ -3350,7 +3370,76 @@ html.reel-on,html.reel-on body{overflow:hidden!important;overscroll-behavior:non
 (function(){
 'use strict';
 var $=function(id){return document.getElementById(id);};
-var VW=1080, VH=1920, FAM='Inter,"Helvetica Neue",Arial,sans-serif';
+var FAM='Inter,"Helvetica Neue",Arial,sans-serif';
+
+/* ── 0. QR-КОД: власний генератор (байтовий режим, UTF-8, версії 1–10) ──
+   Перевірено декодером на кирилиці, латиниці й посиланнях. */
+var TainaQR=(function(){
+  var ECC={L:{bits:1,cw:[7,10,15,20,26,18,20,24,30,18],bl:[1,1,1,1,1,2,2,2,2,4]},
+           M:{bits:0,cw:[10,16,26,18,24,16,18,22,22,26],bl:[1,1,1,2,2,4,4,4,5,5]}};
+  function rawModules(v){var r=(16*v+128)*v+64;if(v>=2){var na=Math.floor(v/7)+2;r-=(25*na-10)*na-55;if(v>=7)r-=36;}return r;}
+  function dataCw(v,e){return Math.floor(rawModules(v)/8)-ECC[e].cw[v-1]*ECC[e].bl[v-1];}
+  function alignPos(v){if(v===1)return [];var na=Math.floor(v/7)+2,size=v*4+17,
+    step=Math.ceil((v*4+4)/(na*2-2))*2,res=[6];for(var p=size-7;res.length<na;p-=step)res.splice(1,0,p);return res;}
+  function gmul(x,y){var z=0;for(var i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x;}return z&255;}
+  function rsDiv(deg){var r=[];for(var i=0;i<deg-1;i++)r.push(0);r.push(1);var root=1;
+    for(i=0;i<deg;i++){for(var j=0;j<r.length;j++){r[j]=gmul(r[j],root);if(j+1<r.length)r[j]^=r[j+1];}root=gmul(root,2);}return r;}
+  function rsRem(data,div){var r=div.map(function(){return 0;});
+    data.forEach(function(b){var f=b^r.shift();r.push(0);div.forEach(function(c,i){r[i]^=gmul(c,f);});});return r;}
+  function make(text,ecl){
+    ecl=ecl||'M'; var bytes=Array.from(new TextEncoder().encode(text)), v, e=ECC[ecl];
+    for(v=1;v<=10;v++){if(4+(v<10?8:16)+bytes.length*8<=dataCw(v,ecl)*8)break;}
+    if(v>10)return null;
+    var bb=[];function put(val,n){for(var i=n-1;i>=0;i--)bb.push((val>>>i)&1);}
+    put(4,4); put(bytes.length,v<10?8:16); bytes.forEach(function(b){put(b,8);});
+    var cap=dataCw(v,ecl)*8; put(0,Math.min(4,cap-bb.length)); put(0,(8-bb.length%8)%8);
+    for(var pad=0xEC;bb.length<cap;pad^=0xEC^0x11)put(pad,8);
+    var data=[],i,j;for(i=0;i<bb.length;i+=8){var x=0;for(j=0;j<8;j++)x=(x<<1)|bb[i+j];data.push(x);}
+    var nb=e.bl[v-1], ecw=e.cw[v-1], raw=Math.floor(rawModules(v)/8), nShort=nb-raw%nb, shortLen=Math.floor(raw/nb);
+    var div=rsDiv(ecw), blocks=[], k=0;
+    for(i=0;i<nb;i++){var dat=data.slice(k,k+shortLen-ecw+(i<nShort?0:1));k+=dat.length;
+      var ec=rsRem(dat,div); if(i<nShort)dat.push(0); blocks.push(dat.concat(ec));}
+    var all=[];for(i=0;i<blocks[0].length;i++)blocks.forEach(function(b,bi){if(i!==shortLen-ecw||bi>=nShort)all.push(b[i]);});
+    var N=v*4+17, M=[], F=[];
+    for(i=0;i<N;i++){M.push(new Array(N).fill(false));F.push(new Array(N).fill(false));}
+    function setF(x,y,d){M[y][x]=d;F[y][x]=true;}
+    for(i=0;i<N;i++){setF(6,i,i%2===0);setF(i,6,i%2===0);}
+    function finder(cx,cy){for(var dy=-4;dy<=4;dy++)for(var dx=-4;dx<=4;dx++){var d=Math.max(Math.abs(dx),Math.abs(dy)),x=cx+dx,y=cy+dy;
+      if(x>=0&&x<N&&y>=0&&y<N)setF(x,y,d!==2&&d!==4);}}
+    finder(3,3);finder(N-4,3);finder(3,N-4);
+    var ap=alignPos(v),na=ap.length;
+    for(i=0;i<na;i++)for(j=0;j<na;j++){if((i===0&&j===0)||(i===0&&j===na-1)||(i===na-1&&j===0))continue;
+      for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++)setF(ap[i]+dx,ap[j]+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1);}
+    function drawFormat(mask){var d=e.bits<<3|mask,r=d,q;for(q=0;q<10;q++)r=(r<<1)^((r>>>9)*0x537);var b=(d<<10|r)^0x5412;
+      function bit(n){return ((b>>>n)&1)!==0;}
+      for(q=0;q<=5;q++)setF(8,q,bit(q)); setF(8,7,bit(6)); setF(8,8,bit(7)); setF(7,8,bit(8));
+      for(q=9;q<15;q++)setF(14-q,8,bit(q));
+      for(q=0;q<8;q++)setF(N-1-q,8,bit(q));
+      for(q=8;q<15;q++)setF(8,N-15+q,bit(q));
+      setF(8,N-8,true);}
+    drawFormat(0);
+    if(v>=7){var r=v,q;for(q=0;q<12;q++)r=(r<<1)^((r>>>11)*0x1F25);var bits=v<<12|r;
+      for(q=0;q<18;q++){var bt=((bits>>>q)&1)!==0,a=N-11+q%3,b2=Math.floor(q/3);setF(a,b2,bt);setF(b2,a,bt);}}
+    var bi=0;
+    for(var right=N-1;right>=1;right-=2){if(right===6)right=5;
+      for(var vert=0;vert<N;vert++)for(j=0;j<2;j++){var xx=right-j,up=((right+1)&2)===0,y=up?N-1-vert:vert;
+        if(!F[y][xx]&&bi<all.length*8){M[y][xx]=((all[bi>>>3]>>>(7-(bi&7)))&1)!==0;bi++;}}}
+    function mfn(m,x,y){switch(m){case 0:return (x+y)%2===0;case 1:return y%2===0;case 2:return x%3===0;case 3:return (x+y)%3===0;
+      case 4:return (Math.floor(x/3)+Math.floor(y/2))%2===0;case 5:return x*y%2+x*y%3===0;case 6:return (x*y%2+x*y%3)%2===0;default:return ((x+y)%2+x*y%3)%2===0;}}
+    function applyMask(m){for(var y=0;y<N;y++)for(var x=0;x<N;x++)if(!F[y][x]&&mfn(m,x,y))M[y][x]=!M[y][x];}
+    function penalty(){var p=0,x,y,run,c,dark=0,pass;
+      for(pass=0;pass<2;pass++)for(y=0;y<N;y++){run=0;c=null;for(x=0;x<N;x++){var m=pass?M[x][y]:M[y][x];
+        if(m===c){run++;if(run===5)p+=3;else if(run>5)p++;}else{c=m;run=1;}}}
+      for(y=0;y<N-1;y++)for(x=0;x<N-1;x++){c=M[y][x];if(c===M[y][x+1]&&c===M[y+1][x]&&c===M[y+1][x+1])p+=3;}
+      for(y=0;y<N;y++)for(x=0;x<N;x++)if(M[y][x])dark++;
+      return p+Math.floor(Math.abs(dark*20-N*N*10)/(N*N))*10;}
+    var best=0,bp=1e9;
+    for(var m=0;m<8;m++){applyMask(m);drawFormat(m);var pp=penalty();if(pp<bp){bp=pp;best=m;}applyMask(m);}
+    applyMask(best);drawFormat(best);
+    return M;
+  }
+  return {make:make};
+})();
 
 /* ── 1. ВИМИКАЄМО ЗАЙВЕ: показ можливостей, підпис, збереження ── */
 try{tourDead=true;tourRun++;spotOff();}catch(e){}
@@ -3359,25 +3448,35 @@ if(window.TainaSig)TainaSig.settings.on=false;
 isDemo=true;
 document.documentElement.classList.add('reel-on');
 
-/* ── 2. НАЛАШТУВАННЯ (пам'ятаються лише в цьому браузері) ─────── */
-var DEF={names:'Олена, Марія, Іван, Оксана, Андрій, Анна',speed:80,pause:0.8,pal:'0,1',motif:'rhomb',
-  neg:false,shape:'cross',end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,cnt:3,snd:true,
-  orn:88,nameMax:160,rec:true,padTop:14,padBot:20};
-var R={},k;for(k in DEF)R[k]=DEF[k];
-try{var sv=JSON.parse(localStorage.getItem('taina_reel')||'null');if(sv)for(k in DEF)if(k in sv)R[k]=sv[k];}catch(e){}
-if(R.orn===82)R.orn=DEF.orn;   /* старе значення за замовчуванням → нове (88 %) */
+/* ── 2. ФОРМАТИ І НАЛАШТУВАННЯ ────────────────────────────────────
+   pads — порожні поля зверху і знизу (у % висоти): там інтерфейс
+   соцмережі (пошук, підпис, кнопки). Для кожного формату — свої. */
+var FMT={tt:{w:1080,h:1920,uk:'TikTok<br>9:16'},ys:{w:1080,h:1920,uk:'Shorts<br>9:16'},yt:{w:1920,h:1080,uk:'YouTube<br>16:9'}};
+var DEF={fmt:'tt',pads:{tt:[14,20],ys:[10,24],yt:[6,8]},
+  names:'#Олена, Марія, Іван, Оксана, Андрій, Анна',speed:80,pause:0.8,erase:'select',
+  pal:'0,1',motif:'rhomb',neg:false,shape:'cross',orn:88,nameMax:160,
+  qrMode:'text',qrLink:'https://taina-ten.vercel.app',qrFade:0.6,
+  end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,cnt:3,snd:true,rec:true};
+var R=JSON.parse(JSON.stringify(DEF)),k;
+try{var sv=JSON.parse(localStorage.getItem('taina_reel')||'null');
+  if(sv){for(k in DEF)if(k in sv&&k!=='pads')R[k]=sv[k];
+    if(sv.pads)for(k in DEF.pads)if(sv.pads[k])R.pads[k]=sv.pads[k];
+    if(sv.padTop!=null&&!sv.pads)R.pads.tt=[sv.padTop,sv.padBot];
+    if(R.orn===82)R.orn=DEF.orn;}}catch(e){}
+if(!FMT[R.fmt])R.fmt='tt';
 
 /* ── 3. РОЗМІТКА ──────────────────────────────────────────────── */
 var root=document.createElement('div');root.id='reel';
-var palOpts='';
-PALS.forEach(function(g,gi){palOpts+='<optgroup label="'+g.uk+'">';
-  g.items.forEach(function(p,ii){palOpts+='<option value="'+gi+','+ii+'">'+p.uk+'</option>';});
-  palOpts+='</optgroup>';});
+var palBtns='';
+PALS.forEach(function(g,gi){g.items.forEach(function(p,ii){
+  palBtns+='<button type="button" data-p="'+gi+','+ii+'"><canvas width="144" height="144"></canvas>'+p.uk+'</button>';});});
 var motOpts=MOTIFS.map(function(m){return '<option value="'+m.k+'">'+m.uk+'</option>';}).join('');
 function sl(id,t,min,max,step){return '<label><span class="h"><span>'+t+'</span><b id="'+id+'-v"></b></span>'+
   '<input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="'+step+'"></label>';}
+function seg(id,items){return '<div class="seg" id="'+id+'">'+items.map(function(a){
+  return '<button type="button" data-v="'+a[0]+'">'+a[1]+'</button>';}).join('')+'</div>';}
 root.innerHTML=
-  '<canvas id="reel-cv" width="'+VW+'" height="'+VH+'"></canvas>'+
+  '<canvas id="reel-cv"></canvas>'+
   '<div id="reel-cnt"></div>'+
   '<div id="reel-done"><div class="in">'+
     '<h1>Відео готове</h1>'+
@@ -3388,23 +3487,39 @@ root.innerHTML=
     '<button type="button" class="btn alt" id="rd-again">↺ Ще раз</button>'+
     '<div class="tip" id="rd-tip"></div>'+
   '</div></div>'+
-  '<div id="reel-set"><div class="in">'+
-    '<h1>TAINA · Ролик</h1>'+
-    '<div class="sub">Імена друкуються по літері, орнамент росте наживо. Відео 1080×1920 сторінка записує сама.</div>'+
-    '<label>Імена (через кому)<textarea id="rs-names" rows="2" spellcheck="false"></textarea></label>'+
+  '<div id="reel-set"><div class="wrap">'+
+   '<div class="pv"><canvas id="rs-pv"></canvas>'+
+     '<div class="pvcap">Прев\'ю фінального кадру · заштриховано — зони інтерфейсу соцмережі</div></div>'+
+   '<div class="ctl">'+
+    '<h1>TAINA · Лабораторія роликів</h1>'+
+    '<div class="sub">Імена друкуються по літері, орнамент росте наживо. Відео сторінка записує сама.</div>'+
+    '<label>Формат'+seg('rs-fmt',[['tt',FMT.tt.uk],['ys',FMT.ys.uk],['yt',FMT.yt.uk]])+'</label>'+
+    sl('rs-padTop','Верхнє поле (інтерфейс зверху), %',0,25,1)+
+    sl('rs-padBot','Нижнє поле (підпис і кнопки), %',0,30,1)+
+
+    '<h2>Текст</h2>'+
+    '<label>Імена (через кому)<textarea id="rs-names" rows="2" spellcheck="false"></textarea>'+
+      '<small>Додай <code>#</code> до імені — у цьому блоці поруч з орнаментом з\'явиться QR-код. '+
+      'Без <code>#</code> QR плавно зникає. Сам символ не друкується.</small></label>'+
     sl('rs-speed','Швидкість друку, мс на літеру',40,200,5)+
     sl('rs-pause','Пауза на готовому орнаменті, с',0.3,3,0.1)+
-    '<label>Палітра<select id="rs-pal">'+palOpts+'</select></label>'+
+    '<label>Як зникає слово'+seg('rs-erase',[['select','Виділити<br>й видалити'],['instant','Одразу'],['letter','По літері']])+'</label>'+
+
+    '<h2>Орнамент</h2>'+
+    '<label>Палітра<div id="rs-pals">'+palBtns+'</div></label>'+
     '<label>Мотив<select id="rs-motif">'+motOpts+'</select></label>'+
     '<label class="chk"><input type="checkbox" id="rs-neg">Негатив</label>'+
-    '<label>Форма<div class="seg" id="rs-shape">'+
-      '<button type="button" data-s="cross">Хрестики</button>'+
-      '<button type="button" data-s="square">Квадрати</button>'+
-      '<button type="button" data-s="circle">Кружечки</button></div></label>'+
-    sl('rs-orn','Ширина орнаменту в кадрі, %',60,100,1)+
-    sl('rs-padTop','Верхнє поле (пошук TikTok), %',0,25,1)+
-    sl('rs-padBot','Нижнє поле (підпис і кнопки TikTok), %',0,30,1)+
+    '<label>Форма'+seg('rs-shape',[['cross','Хрестики'],['square','Квадрати'],['circle','Кружечки']])+'</label>'+
+    sl('rs-orn','Ширина блоку кодів у кадрі, %',50,100,1)+
     sl('rs-nameMax','Розмір імені (найбільший)',80,220,5)+
+
+    '<h2>QR-код</h2>'+
+    '<label>Що всередині QR'+seg('rs-qrMode',[['text','Той самий текст'],['link','Посилання']])+
+      '<small>«Той самий текст» — QR змінюється з кожною літерою, як і орнамент.</small></label>'+
+    '<label id="rs-qrLinkL">Посилання<input type="text" id="rs-qrLink" spellcheck="false" autocomplete="off"></label>'+
+    sl('rs-qrFade','Перехід, коли QR зникає, с',0.2,1.5,0.1)+
+
+    '<h2>Фінал і запис</h2>'+
     '<label>Текст фінального екрана<textarea id="rs-end" rows="2"></textarea></label>'+
     sl('rs-endDur','Тривалість фінального екрана, с',1,5,0.5)+
     sl('rs-cnt','Відлік перед стартом, с',1,10,1)+
@@ -3414,47 +3529,63 @@ root.innerHTML=
     '<button type="button" class="btn" id="reel-go">▶ Старт</button>'+
     '<div class="tip">Під час запису не виходь зі сторінки і не блокуй телефон — інакше відео зупиниться. '+
     'Дотики до екрана ролик не зупиняють.</div>'+
+   '</div>'+
   '</div></div>';
 document.body.appendChild(root);
 
 var cv=$('reel-cv'), g=cv.getContext('2d'), cntEl=$('reel-cnt'), setEl=$('reel-set'), doneEl=$('reel-done');
+var pv=$('rs-pv'), pg=pv.getContext('2d');
+var VW=1080, VH=1920;
 
-/* заповнюємо поля */
-$('rs-names').value=R.names; $('rs-end').value=R.end;
-['speed','pause','endDur','cnt','orn','nameMax','padTop','padBot'].forEach(function(k){$('rs-'+k).value=R[k];});
-$('rs-pal').value=R.pal; if(!$('rs-pal').value)$('rs-pal').value=DEF.pal;
+/* ── 4. ПОЛЯ ФОРМИ ↔ НАЛАШТУВАННЯ ─────────────────────────────── */
+var NUMS=['speed','pause','endDur','cnt','orn','nameMax','qrFade'];
+function segSync(id,val){Array.prototype.forEach.call($(id).children,function(b){b.classList.toggle('on',b.dataset.v===val);});}
+function segBind(id,key){$(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+  R[key]=b.dataset.v;segSync(id,R[key]);if(key==='fmt')fillPads();changed();});segSync(id,R[key]);}
+function fillPads(){var p=R.pads[R.fmt];$('rs-padTop').value=p[0];$('rs-padBot').value=p[1];}
+$('rs-names').value=R.names; $('rs-end').value=R.end; $('rs-qrLink').value=R.qrLink;
+NUMS.forEach(function(k){$('rs-'+k).value=R[k];});
 $('rs-motif').value=R.motif; $('rs-neg').checked=!!R.neg; $('rs-snd').checked=!!R.snd; $('rs-rec').checked=!!R.rec;
-function syncShape(){Array.prototype.forEach.call($('rs-shape').children,function(b){b.classList.toggle('on',b.dataset.s===R.shape);});}
-$('rs-shape').onclick=function(e){var b=e.target.closest('button');if(!b)return;R.shape=b.dataset.s;syncShape();showVals();};
-syncShape();
+fillPads();
+segBind('rs-fmt','fmt'); segBind('rs-erase','erase'); segBind('rs-shape','shape'); segBind('rs-qrMode','qrMode');
+function syncPals(){Array.prototype.forEach.call($('rs-pals').children,function(b){b.classList.toggle('on',b.dataset.p===R.pal);});}
+$('rs-pals').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;R.pal=b.dataset.p;syncPals();changed();});
+if(!$('rs-pals').querySelector('[data-p="'+R.pal+'"]'))R.pal=DEF.pal;
+syncPals();
 
-/* імена: через кому, не довші за ліміт сайту (100 байт) */
-function parseNames(){
-  return $('rs-names').value.split(',').map(function(s){return s.trim();}).filter(Boolean).map(function(s){
-    var out='';Array.from(s).some(function(ch){if(bytesOf(out+ch)>BYTE_MAX)return true;out+=ch;return false;});return out;});
-}
 function readForm(){
-  R.names=$('rs-names').value; R.end=$('rs-end').value;
-  ['speed','pause','endDur','cnt','orn','nameMax','padTop','padBot'].forEach(function(k){R[k]=+$('rs-'+k).value;});
-  R.pal=$('rs-pal').value; R.motif=$('rs-motif').value; R.neg=$('rs-neg').checked;
-  R.snd=$('rs-snd').checked; R.rec=$('rs-rec').checked;
+  R.names=$('rs-names').value; R.end=$('rs-end').value; R.qrLink=$('rs-qrLink').value.trim();
+  NUMS.forEach(function(k){R[k]=+$('rs-'+k).value;});
+  R.pads[R.fmt]=[+$('rs-padTop').value,+$('rs-padBot').value];
+  R.motif=$('rs-motif').value; R.neg=$('rs-neg').checked; R.snd=$('rs-snd').checked; R.rec=$('rs-rec').checked;
 }
+
+/* блоки: «#Олена, Марія» → [{t:'Олена',qr:true},{t:'Марія',qr:false}] */
+function cutBytes(s){var out='';Array.from(s).some(function(ch){if(bytesOf(out+ch)>BYTE_MAX)return true;out+=ch;return false;});return out;}
+function parseBlocks(){
+  var b=R.names.split(',').map(function(s){var qr=s.indexOf('#')>=0;return {t:cutBytes(s.replace(/#/g,'').trim()),qr:qr};})
+    .filter(function(x){return x.t;});
+  return b.length?b:[{t:'TAINA',qr:true}];
+}
+function eraseTime(L){return R.erase==='letter'?L*R.speed/2+150:R.erase==='instant'?120:340;}
 function showVals(){
-  readForm();
   $('rs-speed-v').textContent=R.speed+' мс'; $('rs-pause-v').textContent=R.pause.toFixed(1)+' с';
   $('rs-endDur-v').textContent=R.endDur.toFixed(1)+' с'; $('rs-cnt-v').textContent=R.cnt+' с';
-  $('rs-orn-v').textContent=R.orn+'%'; $('rs-padTop-v').textContent=R.padTop+'%'; $('rs-padBot-v').textContent=R.padBot+'%'; $('rs-nameMax-v').textContent=R.nameMax+' px';
-  var ns=parseNames(), t=0.3;
-  ns.forEach(function(n,i){var L=Array.from(n).length;t+=(L*R.speed+R.pause*1000+(i<ns.length-1?L*R.speed/2+150:0))/1000;});
+  $('rs-orn-v').textContent=R.orn+'%'; $('rs-nameMax-v').textContent=R.nameMax+' px';
+  $('rs-qrFade-v').textContent=R.qrFade.toFixed(1)+' с';
+  $('rs-padTop-v').textContent=R.pads[R.fmt][0]+'%'; $('rs-padBot-v').textContent=R.pads[R.fmt][1]+'%';
+  $('rs-qrLinkL').style.display=R.qrMode==='link'?'':'none';
+  var bl=parseBlocks(), t=0.3, nq=0;
+  bl.forEach(function(b,i){var L=Array.from(b.t).length;if(b.qr)nq++;
+    t+=(L*R.speed+R.pause*1000+(i<bl.length-1?eraseTime(L):0))/1000;
+    if(i>0&&b.qr!==bl[i-1].qr)t+=R.qrFade;});
   t+=R.endDur;
-  $('rs-dur').innerHTML='Тривалість ролика ≈ <b>'+t.toFixed(1)+' с</b> · імен: <b>'+ns.length+'</b>';
+  $('rs-dur').innerHTML='Тривалість ролика ≈ <b>'+t.toFixed(1)+' с</b> · імен: <b>'+bl.length+'</b> · з QR: <b>'+nq+'</b>';
 }
-setEl.addEventListener('input',showVals); setEl.addEventListener('change',showVals);
-showVals();
 
-/* ── 4. ПОЛОТНО 1080×1920 ─────────────────────────────────────────
+/* ── 5. ПОЛОТНО ───────────────────────────────────────────────────
    Тло = поле довкола коду, тож орнамент зливається з кадром.
-   Ім'я — чорне або біле, що контрастніше до тла. */
+   Текст — чорний або білий, що контрастніше до тла. */
 var bg=[10,8,6], fg='#fff';
 function relL(a){return a.map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);})
   .reduce(function(s,v,i){return s+v*[.2126,.7152,.0722][i];},0);}
@@ -3464,26 +3595,26 @@ function setBg(){
   var L=relL(bg); fg=((L+.05)/.05>=1.05/(L+.05))?'#111':'#fff';
   root.style.background='rgb('+bg.join(',')+')'; cntEl.style.color=fg;
 }
+function setFormat(){
+  var f=FMT[R.fmt]; VW=f.w; VH=f.h;
+  if(cv.width!==VW||cv.height!==VH){cv.width=VW;cv.height=VH;}
+  fitCv();
+}
 function fitCv(){
   var s=Math.min(innerWidth/VW,innerHeight/VH);
   cv.style.width=Math.floor(VW*s)+'px'; cv.style.height=Math.floor(VH*s)+'px';
 }
-addEventListener('resize',fitCv); fitCv();
+addEventListener('resize',fitCv);
 
-var cur={text:'',caret:false,end:false}, nameFs=160, endLines=[], endFs=100, t0=0;
-function fitName(names){
+/* стан кадру */
+var cur={text:'',caret:false,end:false,sel:false}, qrM=null, qm=0, endT=0, t0=0;
+var nameFs=160, LQ=null, LN=null;
+function fitName(bl){
   var fs=R.nameMax; g.font='700 '+fs+'px '+FAM;
-  var mw=0;names.forEach(function(n){mw=Math.max(mw,g.measureText(n).width+fs*0.2);});
+  var mw=0;bl.forEach(function(b){mw=Math.max(mw,g.measureText(b.t).width+fs*0.2);});
   if(mw>VW*0.9)fs*=VW*0.9/mw;
   nameFs=Math.floor(fs);
 }
-/* ── РОЗКЛАДКА КАДРУ (однакова на всіх екранах ролику) ──────────
-   Орнамент (його рамка) — на всю ширину мінус поля з боків (за ТЗ 6 %).
-   Нижні 20 % кадру порожні: там TikTok показує підпис і кнопки.
-   Блок «ім'я + орнамент + фінальний напис» — по центру верхніх 80 %.
-   Місце під фінальний напис зарезервоване з самого початку, тож
-   у фіналі орнамент не зсувається. */
-var L={top:0,nh:0,O:0,oy:0,ey:0,lh:0};
 function wrapEnd(fs,maxW){
   g.font='700 '+fs+'px '+FAM; var lines=[];
   R.end.split('\n').forEach(function(par){
@@ -3492,56 +3623,129 @@ function wrapEnd(fs,maxW){
     if(c2)lines.push(c2);});
   return lines;
 }
-function layoutFrame(){
-  /* робоча зона між верхнім і нижнім полем: зверху TikTok кладе пошук, знизу — підпис і кнопки */
-  var Z0=Math.round(VH*R.padTop/100), AV=VH*(1-R.padBot/100)-Z0, PADT=0, G1=40, G2=48;
-  var O=Math.round(VW*R.orn/100), nh=nameFs*1.3;
-  /* фінальний напис: великий, у ширину орнаменту, не більше 3 рядків */
-  var fs=96, lines=wrapEnd(fs,O);
-  while(fs>44&&(lines.length>3||lines.some(function(t){return g.measureText(t).width>O;}))){fs-=4;lines=wrapEnd(fs,O);}
+/* РОЗКЛАДКА. Робоча зона — між верхнім і нижнім полем. Блок
+   «ім'я + коди + фінальний напис» стоїть у ній по центру; місце під
+   напис зарезервоване з самого початку. withQ — два коди поруч
+   (QR ліворуч, орнамент праворуч), однакового розміру. */
+function layout(withQ){
+  var p=R.pads[R.fmt], Z0=Math.round(VH*p[0]/100), AV=VH*(1-p[1]/100)-Z0;
+  var G1=40, G2=48, GQ=Math.round(VW*0.045);
+  var Wmax=Math.round(VW*R.orn/100), nh=nameFs*1.3;
+  var wrapW=Math.min(Wmax,VW*0.8), fs=Math.round(VW>VH?VH*0.07:VW*0.09), lines=wrapEnd(fs,wrapW);
+  while(fs>40&&(lines.length>3||lines.some(function(t){return g.measureText(t).width>wrapW;}))){fs-=4;lines=wrapEnd(fs,wrapW);}
   var lh=Math.round(fs*1.22), eh=lines.length?lines.length*lh:0;
-  /* якщо все разом не влазить у верхні 80 % — трохи зменшуємо орнамент */
-  var total=nh+G1+O+(eh?G2+eh:0);
-  if(total>AV-PADT*2){O=Math.max(400,Math.floor(O-(total-(AV-PADT*2))));total=nh+G1+O+(eh?G2+eh:0);}
+  var S=withQ?Math.floor((Wmax-GQ)/2):Wmax;
+  var total=nh+G1+S+(eh?G2+eh:0);
+  if(total>AV){S=Math.max(160,Math.floor(S-(total-AV)));total=nh+G1+S+(eh?G2+eh:0);}
   var top=Z0+Math.max(0,Math.round((AV-total)/2));
-  L={top:top,nh:nh,O:O,oy:top+nh+G1,ey:top+nh+G1+O+G2,lh:lh};
-  endLines=lines; endFs=fs;
+  var gw=withQ?2*S+GQ:S, x0=(VW-gw)/2;
+  return {top:top,nh:nh,S:S,xQ:x0,xO:withQ?x0+S+GQ:x0,oy:top+nh+G1,ey:top+nh+G1+S+G2,lh:lh,fs:fs,lines:lines};
 }
-function fitEnd(){layoutFrame();}
-var endT=0;
+function relayout(bl){fitName(bl);LQ=layout(true);LN=layout(false);}
+function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+function mix(a,b,t){var o={};for(var k in a)o[k]=typeof a[k]==='number'?a[k]+(b[k]-a[k])*t:a[k];return o;}
+
+function drawQR(x,y,S,alpha){
+  g.save(); g.globalAlpha=alpha;
+  var r=Math.round(S*0.035);
+  /* скруглений квадрат вручну: вбудований roundRect у деяких браузерах
+     зупиняє запис полотна у відео */
+  g.fillStyle='#fff'; g.beginPath();
+  g.moveTo(x+r,y); g.arcTo(x+S,y,x+S,y+S,r); g.arcTo(x+S,y+S,x,y+S,r);
+  g.arcTo(x,y+S,x,y,r); g.arcTo(x,y,x+S,y,r); g.closePath();
+  g.fill();
+  if(qrM){
+    var N=qrM.length, qz=3, m=Math.floor(S/(N+qz*2)), ox=Math.round(x+(S-m*N)/2), oy=Math.round(y+(S-m*N)/2);
+    g.fillStyle='#111';
+    for(var yy=0;yy<N;yy++)for(var xx=0;xx<N;xx++)if(qrM[yy][xx])g.fillRect(ox+xx*m,oy+yy*m,m,m);
+  }
+  g.restore();
+}
 function paint(){
+  var e=ease(Math.max(0,Math.min(1,qm))), L=mix(LN,LQ,e);
   g.setTransform(1,0,0,1,0,0); g.globalAlpha=1;
   g.fillStyle='rgb('+bg.join(',')+')'; g.fillRect(0,0,VW,VH);
-  g.fillStyle=fg; g.textAlign='center'; g.textBaseline='middle';
-  /* ім'я */
+  g.textAlign='center'; g.textBaseline='middle';
+  /* ім'я; «виділення» — як у текстовому редакторі перед видаленням */
   var ty=L.top+L.nh/2;
   g.font='700 '+nameFs+'px '+FAM;
+  if(cur.sel&&cur.text){
+    var sw=g.measureText(cur.text).width;
+    g.fillStyle=fg==='#fff'?'rgba(255,255,255,.32)':'rgba(0,0,0,.22)';
+    g.fillRect(VW/2-sw/2-nameFs*0.06,ty-nameFs*0.62,sw+nameFs*0.12,nameFs*1.24);
+  }
+  g.fillStyle=fg;
   if(cur.text)g.fillText(cur.text,VW/2,ty);
   if(cur.caret&&((performance.now()-t0)%1000)<550){
     var w=cur.text?g.measureText(cur.text).width:0;
     g.fillRect(VW/2+w/2+nameFs*0.06,ty-nameFs*0.42,Math.max(5,nameFs*0.07),nameFs*0.84);
   }
-  /* орнамент: ширина РАМКИ = L.O; світле поле довкола зливається з тлом */
-  if(OFF.width){
-    var D=L.O*(W+10)/(W+6), x=(VW-D)/2, y=L.oy-(D-L.O)/2;
+  /* QR (ліворуч) */
+  if(e>0.002){var sc=0.9+0.1*e, qs=L.S*sc; drawQR(L.xQ+(L.S-qs)/2,L.oy+(L.S-qs)/2,qs,e);}
+  /* орнамент: ширина РАМКИ = S; світле поле довкола зливається з тлом */
+  if(OFF.width&&cur.text){
+    var dd=L.S*(W+10)/(W+6), x=L.xO+L.S/2-dd/2, y=L.oy+L.S/2-dd/2;
     g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
-    g.drawImage(OFF,Math.round(x),Math.round(y),Math.round(D),Math.round(D));
+    g.drawImage(OFF,Math.round(x),Math.round(y),Math.round(dd),Math.round(dd));
   }
-  /* фінальний напис під орнаментом — плавно за 0,4 с */
+  /* фінальний напис — плавно за 0,4 с */
   if(cur.end){
     g.globalAlpha=Math.min(1,(performance.now()-endT)/400);
-    g.font='700 '+endFs+'px '+FAM;
-    endLines.forEach(function(t,i){g.fillText(t,VW/2,L.ey+L.lh/2+i*L.lh);});
+    g.fillStyle=fg; g.font='700 '+L.fs+'px '+FAM;
+    L.lines.forEach(function(t,i){g.fillText(t,VW/2,L.ey+L.lh/2+i*L.lh);});
     g.globalAlpha=1;
   }
 }
-/* малюємо кожен кадр — так запис іде рівно, а курсор блимає */
 var raf=0;
 function loop(){paint();raf=requestAnimationFrame(loop);}
 
-function setText(t,caret){D.single=t; build(); setBg(); cur.text=t; cur.caret=caret;}
+function qrFor(t){if(R.qrMode==='link')return TainaQR.make(R.qrLink||'https://taina-ten.vercel.app');return t?TainaQR.make(t):null;}
+function setText(t,caret,withQR){D.single=t; build(); setBg(); cur.text=t; cur.caret=caret; if(withQR)qrM=qrFor(t);}
 
-/* ── 5. ЗАПИС У ФАЙЛ ───────────────────────────────────────────────
+/* ── 6. ВИГЛЯД, МІНІАТЮРИ ПАЛІТР, ПРЕВ'Ю ───────────────────────── */
+function applyPal(gi,ii){palG=gi;palI=ii;motif=PAL().mono?'none':R.motif;motifK=4;invert=!!R.neg;shape=R.shape;setLayers(1);}
+function applyLook(){var p=R.pal.split(',').map(Number);applyPal(p[0],p[1]);}
+var tileSig='';
+function drawTiles(){
+  var sample=parseBlocks()[0].t, sig=[sample,R.motif,R.neg,R.shape].join('|');
+  if(sig===tileSig)return; tileSig=sig;
+  Array.prototype.forEach.call($('rs-pals').children,function(b){
+    var p=b.dataset.p.split(',').map(Number); applyPal(p[0],p[1]);
+    D.single=sample; build();
+    var c=b.querySelector('canvas'), x=c.getContext('2d');
+    x.clearRect(0,0,c.width,c.height);
+    if(OFF.width){x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(OFF,0,0,c.width,c.height);}
+  });
+}
+function preview(){
+  setFormat(); drawTiles(); applyLook();
+  var bl=parseBlocks(), b=bl[0];
+  relayout(bl);
+  qm=b.qr?1:0; setText(b.t,false,b.qr); if(!b.qr)qrM=null;
+  cur.end=true; cur.sel=false; endT=-1e9;
+  paint();
+  /* зменшена копія + заштриховані зони інтерфейсу */
+  var maxW=Math.min(innerWidth>=900?innerWidth*0.44:innerWidth-32, 900), maxH=innerWidth>=900?innerHeight*0.86:innerHeight*0.34;
+  var s=Math.min(maxW/VW,maxH/VH), dpr=Math.min(2,devicePixelRatio||1);
+  pv.width=Math.round(VW*s*dpr); pv.height=Math.round(VH*s*dpr);
+  pv.style.width=Math.round(VW*s)+'px'; pv.style.height=Math.round(VH*s)+'px';
+  pg.setTransform(1,0,0,1,0,0); pg.imageSmoothingEnabled=true; pg.imageSmoothingQuality='high';
+  pg.drawImage(cv,0,0,pv.width,pv.height);
+  var p=R.pads[R.fmt], k=pv.height/100;
+  pg.save(); pg.fillStyle='rgba(0,0,0,.38)';
+  pg.fillRect(0,0,pv.width,p[0]*k); pg.fillRect(0,pv.height-p[1]*k,pv.width,p[1]*k);
+  pg.strokeStyle='rgba(255,255,255,.75)'; pg.setLineDash([6*dpr,5*dpr]); pg.lineWidth=1.5*dpr;
+  pg.beginPath(); pg.moveTo(0,p[0]*k); pg.lineTo(pv.width,p[0]*k);
+  pg.moveTo(0,pv.height-p[1]*k); pg.lineTo(pv.width,pv.height-p[1]*k); pg.stroke(); pg.restore();
+}
+var pend=0;
+function changed(){readForm();showVals();cancelAnimationFrame(pend);pend=requestAnimationFrame(function(){preview();});}
+setEl.addEventListener('input',changed); setEl.addEventListener('change',changed);
+addEventListener('resize',function(){if(setEl.style.display!=='none')changed();});
+changed();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){tileSig='';changed();});
+
+/* ── 7. ЗАПИС У ФАЙЛ ───────────────────────────────────────────────
    MP4 там, де браузер уміє (iPhone, свіжий Chrome), інакше WebM. */
 var rec=null, chunks=[], mime='';
 function pickMime(){
@@ -3570,43 +3774,42 @@ function recStop(){
 function stamp(){var d=new Date(),p=function(n){return String(n).padStart(2,'0');};
   return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes());}
 function showDone(blob){
-  var mp4=/mp4/.test(blob.type), ext=mp4?'mp4':'webm', name='taina-reel-'+stamp()+'.'+ext;
+  var mp4=/mp4/.test(blob.type), ext=mp4?'mp4':'webm', tag={tt:'tiktok',ys:'shorts',yt:'youtube'}[R.fmt];
+  var name='taina-'+tag+'-'+stamp()+'.'+ext;
   var url=URL.createObjectURL(blob), file=null;
   try{file=new File([blob],name,{type:blob.type});}catch(e){}
   $('reel-prev').src=url;
-  $('rd-info').innerHTML='Формат <b>'+ext.toUpperCase()+'</b>, 1080×1920, '+(blob.size/1048576).toFixed(1)+' МБ';
+  $('rd-info').innerHTML='Формат <b>'+ext.toUpperCase()+'</b>, '+VW+'×'+VH+', '+(blob.size/1048576).toFixed(1)+' МБ';
   var dl=$('rd-dl'); dl.href=url; dl.download=name;
   var canShare=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}));
   $('rd-share').style.display=canShare?'':'none';
   $('rd-share').onclick=function(){navigator.share({files:[file]}).catch(function(){});};
   $('rd-again').onclick=function(){location.reload();};
   $('rd-tip').textContent=mp4
-    ?'На iPhone: «Зберегти в Фото» → у меню обери «Зберегти відео». Далі публікуй у TikTok як звичайне відео.'
-    :'Формат WebM: TikTok на комп\'ютері (tiktok.com/upload) його приймає. Щоб отримати MP4, запиши в Safari або в новішому Chrome.';
+    ?'На iPhone: «Зберегти в Фото» → у меню обери «Зберегти відео». Далі публікуй як звичайне відео.'
+    :'Формат WebM: TikTok і YouTube на комп\'ютері його приймають. Щоб отримати MP4, запиши в Safari або в новішому Chrome.';
   doneEl.style.display='block';
 }
 
-/* ── 6. ВИГЛЯД І СЦЕНАРІЙ ─────────────────────────────────────── */
-function applyLook(){
-  var pg=R.pal.split(',').map(Number);
-  if(PALS[pg[0]]&&PALS[pg[0]].items[pg[1]]){palG=pg[0];palI=pg[1];}
-  motif=PAL().mono?'none':R.motif; motifK=4; invert=!!R.neg;
-  shape=R.shape; setLayers(1);
-}
+/* ── 8. СЦЕНАРІЙ ──────────────────────────────────────────────── */
 var wait=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
+function animQ(to,ms){return new Promise(function(res){var from=qm,s=performance.now();
+  (function st(){var t=Math.min(1,(performance.now()-s)/ms);qm=from+(to-from)*t;if(t<1)requestAnimationFrame(st);else res();})();});}
 var wake=null;
 async function run(){
   readForm();
-  var names=parseNames(); if(!names.length)names=DEF.names.split(',').map(function(s){return s.trim();});
   try{localStorage.setItem('taina_reel',JSON.stringify(R));}catch(e){}
   try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen');}catch(e){}
   if(R.snd)ac();
-  applyLook();
+  setFormat(); applyLook();
+  var bl=parseBlocks();
   /* колір тла заздалегідь — з першого імені */
-  D.single=names[0]; build(); setBg(); D.single=''; build();
+  D.single=bl[0].t; build(); setBg();
   try{if(document.fonts&&document.fonts.load)await document.fonts.load('700 100px Inter');}catch(e){}
-  fitName(names); fitEnd();
-  cur={text:'',caret:false,end:false}; t0=performance.now();
+  relayout(bl);
+  qm=bl[0].qr?1:0; qrM=bl[0].qr?qrFor(''):null;
+  D.single=''; build();
+  cur={text:'',caret:false,end:false,sel:false}; t0=performance.now();
   setEl.style.display='none'; loop();
 
   /* відлік — поверх полотна, у файл не потрапляє */
@@ -3616,23 +3819,32 @@ async function run(){
 
   recStart();
   cur.caret=true; t0=performance.now(); await wait(300);
-  for(var i=0;i<names.length;i++){
-    var ch=Array.from(names[i]);
-    for(var j=1;j<=ch.length;j++){setText(ch.slice(0,j).join(''),true);if(R.snd)typeClick();await wait(R.speed);}
-    setText(names[i],false);
+  for(var i=0;i<bl.length;i++){
+    var b=bl[i], ch=Array.from(b.t);
+    /* QR з'являється між блоками (порожня картка, далі росте разом з орнаментом) */
+    if(i>0&&b.qr&&qm<0.5){qrM=qrFor('');await animQ(1,R.qrFade*1000);}
+    for(var j=1;j<=ch.length;j++){setText(ch.slice(0,j).join(''),true,b.qr);if(R.snd)typeClick();await wait(R.speed);}
+    cur.caret=false;
     await wait(R.pause*1000);
-    if(i<names.length-1){
-      for(j=ch.length-1;j>=0;j--){setText(ch.slice(0,j).join(''),true);await wait(R.speed/2);}
-      await wait(150);
+    /* наступний блок без QR: QR іде, орнамент виїжджає в центр і росте —
+       ще до стирання слова */
+    if(i<bl.length-1&&b.qr&&!bl[i+1].qr){await animQ(0,R.qrFade*1000);qrM=null;b={t:b.t,qr:false};}
+    if(i<bl.length-1){
+      if(R.erase==='letter'){
+        for(j=ch.length-1;j>=0;j--){setText(ch.slice(0,j).join(''),true,b.qr);await wait(R.speed/2);}
+        await wait(150);
+      }else{
+        if(R.erase==='select'){cur.sel=true;await wait(220);cur.sel=false;}
+        setText('',true,b.qr); if(R.snd)tone(420,.05,.05,'triangle');
+        await wait(120);
+      }
     }
   }
-  cur.text=names[names.length-1]; cur.caret=false;
   endT=performance.now(); cur.end=true;
   await wait(R.endDur*1000);
   var blob=await recStop();
   try{if(wake)wake.release();}catch(e){}
   if(blob)showDone(blob);
-  /* без запису екран лишається на фінальному тексті — для захвату екрана */
 }
 $('reel-go').onclick=function(){this.disabled=true;run();};
 })();
