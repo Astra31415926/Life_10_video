@@ -3472,7 +3472,7 @@ var DEF={fmt:'tt',pads:{tt:[14,20],ys:[10,24],yt:[6,8]},reserve:{tt:true,ys:true
   coll:{tt:false,ys:true,yt:true},collStage:{tt:55,ys:55,yt:95},fly:0.7,capSize:100,seed:1,
   names:'#Олена, Марія, Іван, Оксана, Андрій, Анна',speed:80,pause:0.8,erase:'select',
   pal:'0,1',motif:'rhomb',neg:false,shape:'cross',orn:88,nameMax:160,
-  assort:false,colFade:0.3,
+  assort:false,colFade:0.3,assortBg:40,
   nameCol:'ink1',endCol:'ink2',txtCon:3,
   qrMode:'text',qrLink:'https://taina-ten.vercel.app',qrFade:0.6,
   end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,endMove:0.6,endSize:100,cnt:3,snd:true,rec:true,pvShow:'end'};
@@ -3541,8 +3541,9 @@ root.innerHTML=
     '<h2>Орнамент</h2>'+
     '<label>Палітра<div id="rs-pals">'+palBtns+'</div></label>'+
     '<label class="chk"><input type="checkbox" id="rs-assort"><span>Асорті — кожне ім\'я в іншій палітрі'+
-      '<small>Перше ім\'я — у вибраній палітрі, далі випадково. Палітри не повторюються, поки не пройдуть усі.</small></span></label>'+
-    sl('rs-colFade','Перехід кольору між іменами, с',0,1,0.05)+
+      '<small>Перше ім\'я — у вибраній палітрі, далі випадково. Палітри не повторюються, поки не пройдуть усі. '+
+      'Фон — нейтральний сірий і не змінюється; текст — кольорами вибраної палітри.</small></span></label>'+
+    sl('rs-assortBg','Сірий фон в «Асорті»: яскравість, %',0,100,1)+
     '<button type="button" class="btn alt mini" id="rs-shuffle">🎲 Перемішати палітри</button>'+
     '<label>Мотив<select id="rs-motif">'+motOpts+'</select></label>'+
     '<label class="chk"><input type="checkbox" id="rs-neg">Негатив</label>'+
@@ -3584,7 +3585,7 @@ var pv=$('rs-pv'), pg=pv.getContext('2d');
 var VW=1080, VH=1920;
 
 /* ── 4. ПОЛЯ ФОРМИ ↔ НАЛАШТУВАННЯ ─────────────────────────────── */
-var NUMS=['speed','pause','endDur','endMove','endSize','cnt','orn','nameMax','qrFade','colFade','txtCon','fly','capSize'];
+var NUMS=['speed','pause','endDur','endMove','endSize','cnt','orn','nameMax','qrFade','assortBg','txtCon','fly','capSize'];
 function segSync(id,val){Array.prototype.forEach.call($(id).children,function(b){b.classList.toggle('on',b.dataset.v===val);});}
 function segBind(id,key){$(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
   R[key]=b.dataset.v;segSync(id,R[key]);if(key==='fmt')fillPads();changed();});segSync(id,R[key]);}
@@ -3629,7 +3630,7 @@ function showVals(){
   $('rs-orn-v').textContent=R.orn+'%'; $('rs-nameMax-v').textContent=R.nameMax+' px';
   $('rs-qrFade-v').textContent=R.qrFade.toFixed(1)+' с';
   $('rs-endMove-v').textContent=R.endMove.toFixed(1)+' с'; $('rs-endSize-v').textContent=R.endSize+'%';
-  $('rs-colFade-v').textContent=R.colFade.toFixed(2)+' с';
+  $('rs-assortBg-v').textContent=R.assortBg+'%';
   $('rs-txtCon-v').textContent=R.txtCon<=1?'точний колір':R.txtCon.toFixed(1);
   $('rs-padTop-v').textContent=R.pads[R.fmt][0]+'%'; $('rs-padBot-v').textContent=R.pads[R.fmt][1]+'%';
   $('rs-qrLinkL').style.display=R.qrMode==='link'?'':'none';
@@ -3637,7 +3638,7 @@ function showVals(){
   $('rs-capSize-v').textContent=R.capSize+'%';
   var co=collOn();
   function vis(id,on){$(id).closest('label').style.display=on?'':'none';}
-  vis('rs-colFade',R.assort); $('rs-shuffle').style.display=R.assort?'':'none';
+  vis('rs-assortBg',R.assort); $('rs-shuffle').style.display=R.assort?'':'none';
   vis('rs-collStage',co); vis('rs-fly',co); vis('rs-capSize',co);
   vis('rs-erase',!co); vis('rs-reserve',!co); vis('rs-endMove',!co&&!R.reserve[R.fmt]);
   var bl=parseBlocks(), t=0.3, nq=0;
@@ -3645,8 +3646,7 @@ function showVals(){
     t+=(L*R.speed+R.pause*1000)/1000;
     t+=co?R.fly:(i<bl.length-1?eraseTime(L)/1000:0);
     if(i>0&&b.qr!==bl[i-1].qr)t+=R.qrFade;
-    if(i>0&&R.assort)t+=R.colFade;});
-  if(co&&R.assort)t+=R.colFade;
+});
   t+=R.endDur;
   $('rs-dur').innerHTML='Тривалість ролика ≈ <b>'+t.toFixed(1)+' с</b> · імен: <b>'+bl.length+'</b> · з QR: <b>'+nq+'</b>';
 }
@@ -3693,7 +3693,10 @@ function pickCol(kind,P){
   for(var i=0;i<order.length;i++){var x=fit(order[i],P.bg,R.txtCon);if(x)return x;}
   return bwFor(P.bg);
 }
-function colsFrom(P){return {bg:P.bg,n:pickCol(R.nameCol,P),e:pickCol(R.endCol,P),P:P};}
+/* «Асорті»: фон — нейтральний сірий, незмінний; текст — нитками вибраної палітри */
+function grayBg(){var v=Math.round(255*R.assortBg/100);return [v,v,v];}
+function colsFrom(P){if(R.assort)P={bg:grayBg(),ink1:P.ink1,ink2:P.ink2};
+  return {bg:P.bg,n:pickCol(R.nameCol,P),e:pickCol(R.endCol,P),P:P};}
 function setCols(C){bg=C.bg.slice();cN=C.n.slice();cE=C.e.slice();
   root.style.background=rgbS(bg);cntEl.style.color=rgbS(cN);}
 /* намалювати текст t у поточній палітрі й узяти її кольори (OFF лишається з t) */
@@ -3775,38 +3778,63 @@ function layoutColl(bl){
   function lay(withQ){var S=withQ?Math.floor((Sc-GQ)/2):Sc;
     return {top:top,nh:nh,S:S,xQ:x0,xO:withQ?x0+S+GQ:x0,oy:top+nh+G1+(Sc-S)/2,ey:0,lh:0,fs:0,lines:[]};}
   LC0=lay(false); LCQ=lay(true);
-  /* комірки довкола сцени: ряди над і під сценою (на всю ширину) та
-     стовпчики ліворуч і праворуч (у смузі сцени). Ряди й стовпчики
-     відкладаються від країв сцени назовні — так місце використовується
-     щільно і симетрично. Розмір комірки — найбільший, за якого всі вміщуються. */
-  var N=bl.length, Z1=Z0+AV, mx=Math.round(VW*0.03), X0=mx, X1=VW-mx, gap=Math.round(Math.min(VW,VH)*0.018);
-  var capK=0.17*R.capSize/100, best=null, cmax=Math.round(Math.min(Sc*0.6,Math.min(VW,VH)*0.32));
-  function cells(c){
-    var cap=Math.round(c*capK), ch=c+cap, out=[], q, r, x, y;
-    var nc=Math.floor((X1-X0+gap)/(c+gap)), gx=X0+((X1-X0)-(nc*(c+gap)-gap))/2;
-    for(y=STG.y-gap-ch;y>=Z0-0.5;y-=ch+gap)for(q=0;q<nc;q++)out.push({x:gx+q*(c+gap),y:y});
-    for(y=STG.y+STG.h+gap;y+ch<=Z1+0.5;y+=ch+gap)for(q=0;q<nc;q++)out.push({x:gx+q*(c+gap),y:y});
-    var nr=Math.floor((STG.h+gap)/(ch+gap)), gy=STG.y+(STG.h-(nr*(ch+gap)-gap))/2;
-    for(x=STG.x-gap-c;x>=X0-0.5;x-=c+gap)for(r=0;r<nr;r++)out.push({x:x,y:gy+r*(ch+gap)});
-    for(x=STG.x+STG.w+gap;x+c<=X1+0.5;x+=c+gap)for(r=0;r<nr;r++)out.push({x:x,y:gy+r*(ch+gap)});
-    return {c:c,cap:cap,gap:gap,free:out};
+  /* РІВНА СІТКА. Маленькі орнаменти стоять двома дзеркальними групами:
+     ліворуч і праворуч від сцени (або зверху й знизу). У групі — рівні
+     стовпчики (ряди) однакових комірок; останній неповний стовпчик (ряд)
+     стоїть по центру, тож стіна симетрична за будь-якої кількості імен.
+     Шукаємо найбільші комірки, з якими вміщуються всі; порожні місця
+     трохи штрафуються, щоб стіна була щільною. */
+  var N=bl.length, Z1=Z0+AV, mx=Math.round(VW*0.03), ZW=VW-2*mx, gap=Math.round(Math.min(VW,VH)*0.018);
+  var capK=0.17*R.capSize/100, half=Math.ceil(N/2), best=null;
+  var sideW=(ZW-STG.w)/2-gap, blockH=(AV-STG.h)/2-gap, cTop=Sc*0.6;
+  /* неповний стовпчик (ряд) ставимо по клітинках сітки симетрично; не
+     виходить лише коли місць парна кількість, а орнаментів непарна —
+     такі варіанти штрафуємо, щоб їх обирати лише за браком інших */
+  function tryCfg(kind,L,K,c,cmin){c=Math.floor(Math.min(c,cTop));if(c<cmin)return;
+    /* порожні клітинки — лише в задіяних лініях; «півкрок» — сильний штраф */
+    var holes=0,bad=0;
+    [Math.ceil(N/2),Math.floor(N/2)].forEach(function(n){var r=n%K;holes+=Math.ceil(n/K)*K-n;if(r&&K%2===0&&r%2===1)bad++;});
+    var sc=c*(1-0.06*holes-0.5*bad);
+    if(!best||sc>best.sc)best={sc:sc,kind:kind,L:L,K:K,c:c};}
+  [40,16].forEach(function(cmin){if(best)return;
+    /* K — місць у лінії, L — скільки ліній треба більшій групі */
+    for(var K=1;K<=half+3;K++){var L=Math.ceil(half/K);
+      tryCfg('S',L,K,Math.min((sideW-(L-1)*gap)/L,(AV-(K-1)*gap)/K/(1+capK)),cmin);
+      tryCfg('T',L,K,Math.min((ZW-(K-1)*gap)/K,(blockH-(L-1)*gap)/L/(1+capK)),cmin);}});
+  if(!best)best={kind:'S',L:1,K:half,c:16};
+  var c=best.c, cap=Math.round(c*capK), ch=c+cap, Lb=best.L, Kb=best.K, pos=[[],[]], nS=[Math.ceil(N/2),Math.floor(N/2)];
+  for(var sd=0;sd<2;sd++)for(var j=0;j<Lb;j++){
+    var m=Math.min(Kb,nS[sd]-j*Kb); if(m<=0)break;
+    var line=[], idx=gridIdx(Kb,m);
+    idx.forEach(function(k){
+      var x,y,half=(k===Math.floor(k))?0:1;
+      if(best.kind==='S'){                 /* стовпчики; j=0 — біля сцени */
+        var Bw=Lb*c+(Lb-1)*gap, xl=mx+(sideW-Bw)/2+(Lb-1-j)*(c+gap);
+        x=sd===0?xl:VW-xl-c;
+        y=Z0+(AV-(Kb*ch+(Kb-1)*gap))/2+k*(ch+gap);
+      }else{                               /* ряди; j=0 — біля сцени */
+        var Bh=Lb*ch+(Lb-1)*gap, yt=Z0+(blockH-Bh)/2+(Lb-1-j)*(ch+gap);
+        y=sd===0?yt:Z0+Z1-yt-ch;
+        x=mx+(ZW-(Kb*c+(Kb-1)*gap))/2+k*(c+gap);
+      }
+      line.push({x:x,y:y,o:Math.abs(k-(Kb-1)/2),i:k});
+    });
+    /* у стовпчику (ряду) — від середини назовні */
+    line.sort(function(a,b){return a.o-b.o||a.i-b.i;});
+    pos[sd]=pos[sd].concat(line);
   }
-  for(var c=cmax;c>=40;c-=2){
-    var cs=cells(c);
-    if(cs.free.length>=N){best=cs;break;}
-    if(!best||cs.free.length>best.free.length)best=cs;
+  /* по черзі: ліворуч, праворуч (або зверху, знизу) */
+  function gridIdx(K,m){
+    /* m місць із K у лінії — симетрично щодо середини, по клітинках сітки */
+    var out=[],i;
+    if(m>=K){for(i=0;i<K;i++)out.push(i);return out;}
+    if((K-m)%2===0){for(i=0;i<m;i++)out.push((K-m)/2+i);return out;}
+    if(K%2===1){var c0=(K-1)/2;for(i=1;out.length<m;i++){out.push(c0-i,c0+i);}return out.sort(function(a,b){return a-b;});}
+    /* парна кількість місць і непарна орнаментів — по центру з півкроком */
+    for(i=0;i<m;i++)out.push((K-m)/2+i);return out;
   }
-  if(!best||!best.free.length){var c2=80;best={c:c2,cap:Math.round(c2*capK),gap:gap,free:[{x:X0,y:Z0}]};}
-  /* порядок: ближчі до краю сцени — раніше (стіна обростає сцену кільцем);
-     у кільці — від середини назовні; однакові — зверху вниз, ліва раніше
-     за праву: симетрично, по черзі */
-  var cx=VW/2, cy=STG.y+STG.h/2;
-  function d(a){var dx=Math.max(0,Math.abs(a.x+best.c/2-cx)-(STG.w+best.c)/2),
-      dy=Math.max(0,Math.abs(a.y+(best.c+best.cap)/2-cy)-(STG.h+best.c+best.cap)/2);
-    return Math.round(Math.hypot(dx,dy)/8);}
-  function e(a){return Math.round(Math.hypot(a.x+best.c/2-cx,a.y+(best.c+best.cap)/2-cy)/8);}
-  best.free.sort(function(a,b){return d(a)-d(b)||e(a)-e(b)||a.y-b.y||a.x-b.x;});
-  SL=best;
+  var free=[]; for(var q=0;q<N;q++)free.push(pos[q%2][Math.floor(q/2)]);
+  SL={c:c,cap:cap,gap:gap,free:free};
   /* фінальний напис — у центрі, на місці сцени: якомога більший,
      рядки рівні за довжиною */
   var bw=bestWrap(R.end,Sc*0.92,STG.h,Math.round((VW>VH?VH*0.07:VW*0.09)*1.5*R.endSize/100),3);
@@ -3983,7 +4011,7 @@ function preview(){
     var plan=palPlan(bl.length), n=fin?bl.length:bl.length-1;
     for(var i=0;i<n;i++){usePal(plan[i]);wall.push(makeTile(bl[i].t,i));}
     if(fin){applyLook();setCols(C);qm=0;qrM=null;D.single='';build();cur={text:'',caret:false,end:true,sel:false};}
-    else{var bz=bl[bl.length-1];usePal(plan[bl.length-1]);setCols(probe(bz.t));
+    else{var bz=bl[bl.length-1];usePal(plan[bl.length-1]);if(!R.assort)setCols(probe(bz.t));
       qm=bz.qr?1:0;setText(bz.t,false,bz.qr);if(!bz.qr)qrM=null;cur.end=false;}
   }else{
     qm=b.qr?1:0; setText(b.t,false,b.qr); if(!b.qr)qrM=null;
@@ -4114,12 +4142,8 @@ async function run(){
   cur.caret=true; t0=performance.now(); await wait(300);
   for(var i=0;i<bl.length;i++){
     var b=bl[i], ch=Array.from(b.t);
-    /* «Асорті»: слово стерте, кадр порожній — тло й текст плавно
-       перетікають у нову палітру */
-    if(i>0&&plan[i]!==plan[i-1]){
-      usePal(plan[i]); var C=probe(b.t); D.single=''; build();
-      await animCols(C,R.colFade*1000);
-    }
+    /* «Асорті»: нове ім'я — нова палітра орнаменту; фон і текст не змінюються */
+    if(i>0&&plan[i]!==plan[i-1])usePal(plan[i]);
     /* QR з'являється між блоками (порожня картка, далі росте разом з орнаментом) */
     if(i>0&&b.qr&&qm<0.5){qrM=qrFor('');await animQ(1,R.qrFade*1000);}
     for(var j=1;j<=ch.length;j++){setText(ch.slice(0,j).join(''),true,b.qr);if(R.snd)typeClick();await wait(R.speed);}
@@ -4154,9 +4178,6 @@ async function run(){
       }
     }
   }
-  /* колекція + «Асорті»: у фіналі тло повертається до вибраної палітри */
-  if(co&&R.assort&&plan[bl.length-1]!==plan[0]){usePal(plan[0]);var Cf=probe(bl[0].t);D.single='';build();
-    await animCols(Cf,R.colFade*1000);}
   /* фінал: якщо місце під напис не тримали — орнамент зменшується,
      звільняючи його, і напис проявляється */
   endT=performance.now(); cur.end=true;
