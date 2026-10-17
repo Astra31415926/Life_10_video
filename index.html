@@ -3302,6 +3302,10 @@ buildDeck();
      Формати: TikTok 9:16 · YouTube Shorts 9:16 · YouTube 16:9.
      Символ # у блоці імен → у цьому блоці поруч з орнаментом з'являється
      QR-код того самого тексту. У блоці без # QR плавно зникає.
+     Текст — кольорами ниток палітри (з поправкою на читабельність).
+     «Асорті» — кожне ім'я у випадковій палітрі.
+     Місце під фінальний напис: тримати з початку або звільняти у фіналі
+     (орнамент спершу максимальний, потім зменшується) — для кожного формату.
      Нічого не зберігається в стан сайту, дотики ролик не зупиняють.
      ═══════════════════════════════════════════════════════════════════ -->
 <style>
@@ -3320,13 +3324,12 @@ html.reel-on,html.reel-on body{overflow:hidden!important;overscroll-behavior:non
 #reel-set .wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 #reel-set .pv{position:sticky;top:-14px;z-index:1;background:#16130f;padding:6px 0 10px;
   display:flex;flex-direction:column;align-items:center;gap:6px;border-bottom:1px solid #3a3229}
-#rs-pv{display:block;max-width:100%;max-height:34vh;border-radius:6px;box-shadow:0 0 0 1px #5a4e40}
+#rs-pv{display:block;border-radius:6px;box-shadow:0 0 0 1px #5a4e40}
 #reel-set .pvcap{font-size:12px;color:#b9ad9b;text-align:center}
 #reel-set .ctl{display:flex;flex-direction:column;gap:16px}
 @media (min-width:900px){
   #reel-set .wrap{flex-direction:row;align-items:flex-start;gap:28px}
   #reel-set .pv{flex:0 0 46%;top:0;border-bottom:0;padding-top:0}
-  #rs-pv{max-height:86vh}
   #reel-set .ctl{flex:1 1 auto}
 }
 #reel h1{font:800 22px/1.2 "JetBrains Mono",monospace;letter-spacing:.04em;color:#f0d9a8;margin:4px 0 0}
@@ -3346,6 +3349,12 @@ html.reel-on,html.reel-on body{overflow:hidden!important;overscroll-behavior:non
   font:700 13.5px/1.25 Inter,Arial,sans-serif;padding:12px 4px;cursor:pointer}
 #reel-set .seg button:last-child{border-right:0}
 #reel-set .seg button.on{background:#c9a876;color:#16130f}
+/* кружечок кольору на кнопках «Колір тексту» — справжній колір у поточній палітрі */
+#reel-set .seg .dot{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:-2px;
+  background:#888;box-shadow:0 0 0 1.5px rgba(242,236,226,.8)}
+#reel-set .seg button.on .dot{box-shadow:0 0 0 1.5px #16130f}
+#reel-set .pv .seg{width:min(100%,360px)}
+#reel-set .pv .seg button{padding:8px 4px;font-size:12.5px}
 #reel-set .chk{flex-direction:row;align-items:center;gap:10px}
 #reel-set .chk input{width:22px;height:22px;accent-color:#c9a876;flex:0 0 auto}
 #reel-set small{display:block;font-weight:400;font-size:12px;color:#b9ad9b;margin-top:2px;line-height:1.45}
@@ -3452,15 +3461,20 @@ document.documentElement.classList.add('reel-on');
    pads — порожні поля зверху і знизу (у % висоти): там інтерфейс
    соцмережі (пошук, підпис, кнопки). Для кожного формату — свої. */
 var FMT={tt:{w:1080,h:1920,uk:'TikTok<br>9:16'},ys:{w:1080,h:1920,uk:'Shorts<br>9:16'},yt:{w:1920,h:1080,uk:'YouTube<br>16:9'}};
-var DEF={fmt:'tt',pads:{tt:[14,20],ys:[10,24],yt:[6,8]},
+/* reserve — чи тримати місце під фінальний напис з самого початку.
+   Ні (YouTube) → орнамент спершу максимальний, а у фіналі зменшується. */
+var DEF={fmt:'tt',pads:{tt:[14,20],ys:[10,24],yt:[6,8]},reserve:{tt:true,ys:true,yt:false},
   names:'#Олена, Марія, Іван, Оксана, Андрій, Анна',speed:80,pause:0.8,erase:'select',
   pal:'0,1',motif:'rhomb',neg:false,shape:'cross',orn:88,nameMax:160,
+  assort:false,colFade:0.3,
+  nameCol:'ink1',endCol:'ink2',txtCon:3,
   qrMode:'text',qrLink:'https://taina-ten.vercel.app',qrFade:0.6,
-  end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,cnt:3,snd:true,rec:true};
+  end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,endMove:0.6,endSize:100,cnt:3,snd:true,rec:true,pvShow:'end'};
+var PERFMT=['pads','reserve'];
 var R=JSON.parse(JSON.stringify(DEF)),k;
 try{var sv=JSON.parse(localStorage.getItem('taina_reel')||'null');
-  if(sv){for(k in DEF)if(k in sv&&k!=='pads')R[k]=sv[k];
-    if(sv.pads)for(k in DEF.pads)if(sv.pads[k])R.pads[k]=sv.pads[k];
+  if(sv){for(k in DEF)if(k in sv&&PERFMT.indexOf(k)<0)R[k]=sv[k];
+    PERFMT.forEach(function(key){if(sv[key])for(var f in DEF[key])if(sv[key][f]!=null)R[key][f]=sv[key][f];});
     if(sv.padTop!=null&&!sv.pads)R.pads.tt=[sv.padTop,sv.padBot];
     if(R.orn===82)R.orn=DEF.orn;}}catch(e){}
 if(!FMT[R.fmt])R.fmt='tt';
@@ -3489,13 +3503,17 @@ root.innerHTML=
   '</div></div>'+
   '<div id="reel-set"><div class="wrap">'+
    '<div class="pv"><canvas id="rs-pv"></canvas>'+
-     '<div class="pvcap">Прев\'ю фінального кадру · заштриховано — зони інтерфейсу соцмережі</div></div>'+
+     seg('rs-pvShow',[['type','Під час друку'],['end','Фінал']])+
+     '<div class="pvcap">Прев\'ю першого імені · затемнено — зони інтерфейсу соцмережі</div></div>'+
    '<div class="ctl">'+
     '<h1>TAINA · Лабораторія роликів</h1>'+
     '<div class="sub">Імена друкуються по літері, орнамент росте наживо. Відео сторінка записує сама.</div>'+
     '<label>Формат'+seg('rs-fmt',[['tt',FMT.tt.uk],['ys',FMT.ys.uk],['yt',FMT.yt.uk]])+'</label>'+
     sl('rs-padTop','Верхнє поле (інтерфейс зверху), %',0,25,1)+
     sl('rs-padBot','Нижнє поле (підпис і кнопки), %',0,30,1)+
+    '<label class="chk"><input type="checkbox" id="rs-reserve"><span>Тримати місце під фінальний напис з початку'+
+      '<small>Вимкнено — орнамент увесь ролик максимальний, а у фіналі зменшується, звільняючи місце напису. '+
+      'Для кожного формату окремо.</small></span></label>'+
 
     '<h2>Текст</h2>'+
     '<label>Імена (через кому)<textarea id="rs-names" rows="2" spellcheck="false"></textarea>'+
@@ -3507,11 +3525,21 @@ root.innerHTML=
 
     '<h2>Орнамент</h2>'+
     '<label>Палітра<div id="rs-pals">'+palBtns+'</div></label>'+
+    '<label class="chk"><input type="checkbox" id="rs-assort"><span>Асорті — кожне ім\'я в іншій палітрі'+
+      '<small>Перше ім\'я — у вибраній палітрі, далі випадково. Палітри не повторюються, поки не пройдуть усі.</small></span></label>'+
+    sl('rs-colFade','Перехід кольору між іменами, с',0,1,0.05)+
     '<label>Мотив<select id="rs-motif">'+motOpts+'</select></label>'+
     '<label class="chk"><input type="checkbox" id="rs-neg">Негатив</label>'+
     '<label>Форма'+seg('rs-shape',[['cross','Хрестики'],['square','Квадрати'],['circle','Кружечки']])+'</label>'+
     sl('rs-orn','Ширина блоку кодів у кадрі, %',50,100,1)+
     sl('rs-nameMax','Розмір імені (найбільший)',80,220,5)+
+
+    '<h2>Колір тексту</h2>'+
+    '<label>Ім\'я'+seg('rs-nameCol',[['ink1','<i class="dot"></i>Нитка 1'],['ink2','<i class="dot"></i>Нитка 2'],['bw','<i class="dot"></i>Чорний<br>або білий']])+'</label>'+
+    '<label>Фінальний напис'+seg('rs-endCol',[['ink1','<i class="dot"></i>Нитка 1'],['ink2','<i class="dot"></i>Нитка 2'],['bw','<i class="dot"></i>Чорний<br>або білий']])+'</label>'+
+    sl('rs-txtCon','Читабельність: контраст тексту з тлом',1,7,0.5)+
+    '<small style="margin-top:-8px">1 — точний колір нитки. Більше — колір нитки світлішає або темнішає, '+
+      'доки текст не стане добре видно (3 — норма для великого тексту).</small>'+
 
     '<h2>QR-код</h2>'+
     '<label>Що всередині QR'+seg('rs-qrMode',[['text','Той самий текст'],['link','Посилання']])+
@@ -3521,7 +3549,9 @@ root.innerHTML=
 
     '<h2>Фінал і запис</h2>'+
     '<label>Текст фінального екрана<textarea id="rs-end" rows="2"></textarea></label>'+
+    sl('rs-endSize','Розмір фінального напису, %',50,160,5)+
     sl('rs-endDur','Тривалість фінального екрана, с',1,5,0.5)+
+    sl('rs-endMove','Перехід у фіналі (орнамент зменшується), с',0.2,1.5,0.1)+
     sl('rs-cnt','Відлік перед стартом, с',1,10,1)+
     '<label class="chk"><input type="checkbox" id="rs-rec"><span>Записати відео у файл<small>після ролику з\'являться кнопки «Зберегти»</small></span></label>'+
     '<label class="chk"><input type="checkbox" id="rs-snd"><span>Звук клавіш<small>лише в динаміку, у файл не потрапляє</small></span></label>'+
@@ -3538,16 +3568,19 @@ var pv=$('rs-pv'), pg=pv.getContext('2d');
 var VW=1080, VH=1920;
 
 /* ── 4. ПОЛЯ ФОРМИ ↔ НАЛАШТУВАННЯ ─────────────────────────────── */
-var NUMS=['speed','pause','endDur','cnt','orn','nameMax','qrFade'];
+var NUMS=['speed','pause','endDur','endMove','endSize','cnt','orn','nameMax','qrFade','colFade','txtCon'];
 function segSync(id,val){Array.prototype.forEach.call($(id).children,function(b){b.classList.toggle('on',b.dataset.v===val);});}
 function segBind(id,key){$(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
   R[key]=b.dataset.v;segSync(id,R[key]);if(key==='fmt')fillPads();changed();});segSync(id,R[key]);}
-function fillPads(){var p=R.pads[R.fmt];$('rs-padTop').value=p[0];$('rs-padBot').value=p[1];}
+/* поля, що свої для кожного формату */
+function fillPads(){var p=R.pads[R.fmt];$('rs-padTop').value=p[0];$('rs-padBot').value=p[1];$('rs-reserve').checked=!!R.reserve[R.fmt];}
 $('rs-names').value=R.names; $('rs-end').value=R.end; $('rs-qrLink').value=R.qrLink;
 NUMS.forEach(function(k){$('rs-'+k).value=R[k];});
 $('rs-motif').value=R.motif; $('rs-neg').checked=!!R.neg; $('rs-snd').checked=!!R.snd; $('rs-rec').checked=!!R.rec;
+$('rs-assort').checked=!!R.assort;
 fillPads();
 segBind('rs-fmt','fmt'); segBind('rs-erase','erase'); segBind('rs-shape','shape'); segBind('rs-qrMode','qrMode');
+segBind('rs-nameCol','nameCol'); segBind('rs-endCol','endCol'); segBind('rs-pvShow','pvShow');
 function syncPals(){Array.prototype.forEach.call($('rs-pals').children,function(b){b.classList.toggle('on',b.dataset.p===R.pal);});}
 $('rs-pals').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;R.pal=b.dataset.p;syncPals();changed();});
 if(!$('rs-pals').querySelector('[data-p="'+R.pal+'"]'))R.pal=DEF.pal;
@@ -3556,8 +3589,9 @@ syncPals();
 function readForm(){
   R.names=$('rs-names').value; R.end=$('rs-end').value; R.qrLink=$('rs-qrLink').value.trim();
   NUMS.forEach(function(k){R[k]=+$('rs-'+k).value;});
-  R.pads[R.fmt]=[+$('rs-padTop').value,+$('rs-padBot').value];
+  R.pads[R.fmt]=[+$('rs-padTop').value,+$('rs-padBot').value]; R.reserve[R.fmt]=$('rs-reserve').checked;
   R.motif=$('rs-motif').value; R.neg=$('rs-neg').checked; R.snd=$('rs-snd').checked; R.rec=$('rs-rec').checked;
+  R.assort=$('rs-assort').checked;
 }
 
 /* блоки: «#Олена, Марія» → [{t:'Олена',qr:true},{t:'Марія',qr:false}] */
@@ -3573,28 +3607,69 @@ function showVals(){
   $('rs-endDur-v').textContent=R.endDur.toFixed(1)+' с'; $('rs-cnt-v').textContent=R.cnt+' с';
   $('rs-orn-v').textContent=R.orn+'%'; $('rs-nameMax-v').textContent=R.nameMax+' px';
   $('rs-qrFade-v').textContent=R.qrFade.toFixed(1)+' с';
+  $('rs-endMove-v').textContent=R.endMove.toFixed(1)+' с'; $('rs-endSize-v').textContent=R.endSize+'%';
+  $('rs-colFade-v').textContent=R.colFade.toFixed(2)+' с';
+  $('rs-txtCon-v').textContent=R.txtCon<=1?'точний колір':R.txtCon.toFixed(1);
   $('rs-padTop-v').textContent=R.pads[R.fmt][0]+'%'; $('rs-padBot-v').textContent=R.pads[R.fmt][1]+'%';
   $('rs-qrLinkL').style.display=R.qrMode==='link'?'':'none';
+  $('rs-colFade').closest('label').style.display=R.assort?'':'none';
+  $('rs-endMove').closest('label').style.display=R.reserve[R.fmt]?'none':'';
   var bl=parseBlocks(), t=0.3, nq=0;
   bl.forEach(function(b,i){var L=Array.from(b.t).length;if(b.qr)nq++;
     t+=(L*R.speed+R.pause*1000+(i<bl.length-1?eraseTime(L):0))/1000;
-    if(i>0&&b.qr!==bl[i-1].qr)t+=R.qrFade;});
+    if(i>0&&b.qr!==bl[i-1].qr)t+=R.qrFade;
+    if(i>0&&R.assort)t+=R.colFade;});
   t+=R.endDur;
   $('rs-dur').innerHTML='Тривалість ролика ≈ <b>'+t.toFixed(1)+' с</b> · імен: <b>'+bl.length+'</b> · з QR: <b>'+nq+'</b>';
 }
 
-/* ── 5. ПОЛОТНО ───────────────────────────────────────────────────
+/* ── 5. ПОЛОТНО І КОЛЬОРИ ─────────────────────────────────────────
    Тло = поле довкола коду, тож орнамент зливається з кадром.
-   Текст — чорний або білий, що контрастніше до тла. */
-var bg=[10,8,6], fg='#fff';
+   Текст — кольорами ниток тієї ж палітри:
+     нитка 1 — колір рамки (основна нитка орнаменту),
+     нитка 2 — друга за кількістю нитка (мотив).
+   Якщо нитка зливається з тлом, вона світлішає або темнішає (зберігаючи
+   відтінок), доки контраст не дійде до R.txtCon. Не вийшло — пробуємо
+   іншу нитку, далі — чорний або білий. */
+var bg=[10,8,6], cN=[255,255,255], cE=[255,255,255];
+function rgbS(a,al){var s=a.map(function(v){return Math.round(v);}).join(',');return al==null?'rgb('+s+')':'rgba('+s+','+al+')';}
 function relL(a){return a.map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);})
   .reduce(function(s,v,i){return s+v*[.2126,.7152,.0722][i];},0);}
-function setBg(){
-  if(!OFF.width)return;
-  var d=OCTX.getImageData(1,1,1,1).data; bg=[d[0],d[1],d[2]];
-  var L=relL(bg); fg=((L+.05)/.05>=1.05/(L+.05))?'#111':'#fff';
-  root.style.background='rgb('+bg.join(',')+')'; cntEl.style.color=fg;
+function cr(a,b){var x=relL(a),y=relL(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+function lerpA(a,b,t){return a.map(function(v,i){return v+(b[i]-v)*t;});}
+function bwFor(b){return cr([255,255,255],b)>=cr([17,17,17],b)?[255,255,255]:[17,17,17];}
+/* колір c, підсунутий до білого чи чорного (у свій бік від тла) до контрасту T */
+function fit(c,b,T){
+  if(cr(c,b)>=T)return c;
+  var tg=relL(c)>=relL(b)?[255,255,255]:[0,0,0];
+  for(var t=0.02;t<=1.0001;t+=0.02){var x=lerpA(c,tg,t);if(cr(x,b)>=T)return x.map(Math.round);}
+  return null;
 }
+/* кольори поточної палітри — з останнього малюнка (CELLS) */
+function palColors(){
+  var d=OCTX.getImageData(1,1,1,1).data, b=[d[0],d[1],d[2]], ink1=null, ink2=null;
+  if(typeof CELLS!=='undefined'&&CELLS&&CELLS.col&&CELLS.col.length){
+    var fab=String(CELLS.fab).toLowerCase(), main=String(CELLS.col[0]).toLowerCase(), cnt={}, best=null, bn=0;
+    if(main===fab)main=null;
+    CELLS.col.forEach(function(c){c=String(c).toLowerCase();if(c!==fab&&c!==main)cnt[c]=(cnt[c]||0)+1;});
+    for(var key in cnt)if(cnt[key]>bn){bn=cnt[key];best=key;}
+    ink1=main?hexRGB(main):(best?hexRGB(best):null);
+    ink2=(main&&best)?hexRGB(best):ink1;
+  }
+  if(!ink1)ink1=ink2=bwFor(b);
+  return {bg:b,ink1:ink1,ink2:ink2};
+}
+function pickCol(kind,P){
+  if(kind==='bw')return bwFor(P.bg);
+  var order=kind==='ink2'?[P.ink2,P.ink1]:[P.ink1,P.ink2];
+  for(var i=0;i<order.length;i++){var x=fit(order[i],P.bg,R.txtCon);if(x)return x;}
+  return bwFor(P.bg);
+}
+function colsFrom(P){return {bg:P.bg,n:pickCol(R.nameCol,P),e:pickCol(R.endCol,P),P:P};}
+function setCols(C){bg=C.bg.slice();cN=C.n.slice();cE=C.e.slice();
+  root.style.background=rgbS(bg);cntEl.style.color=rgbS(cN);}
+/* намалювати текст t у поточній палітрі й узяти її кольори (OFF лишається з t) */
+function probe(t){D.single=t;build();return colsFrom(palColors());}
 function setFormat(){
   var f=FMT[R.fmt]; VW=f.w; VH=f.h;
   if(cv.width!==VW||cv.height!==VH){cv.width=VW;cv.height=VH;}
@@ -3606,9 +3681,10 @@ function fitCv(){
 }
 addEventListener('resize',fitCv);
 
-/* стан кадру */
-var cur={text:'',caret:false,end:false,sel:false}, qrM=null, qm=0, endT=0, t0=0;
-var nameFs=160, LQ=null, LN=null;
+/* стан кадру. qm — частка «QR поруч» (0…1), em — частка «фінальний напис
+   отримав своє місце» (0…1): обидві плавно анімуються. */
+var cur={text:'',caret:false,end:false,sel:false}, qrM=null, qm=0, em=0, endT=0, t0=0;
+var nameFs=160, LQ0=null, LN0=null, LQ1=null, LN1=null;
 function fitName(bl){
   var fs=R.nameMax; g.font='700 '+fs+'px '+FAM;
   var mw=0;bl.forEach(function(b){mw=Math.max(mw,g.measureText(b.t).width+fs*0.2);});
@@ -3624,24 +3700,32 @@ function wrapEnd(fs,maxW){
   return lines;
 }
 /* РОЗКЛАДКА. Робоча зона — між верхнім і нижнім полем. Блок
-   «ім'я + коди + фінальний напис» стоїть у ній по центру; місце під
-   напис зарезервоване з самого початку. withQ — два коди поруч
-   (QR ліворуч, орнамент праворуч), однакового розміру. */
-function layout(withQ){
+   «ім'я + коди (+ фінальний напис)» стоїть у ній по центру.
+   withQ — два коди поруч (QR ліворуч, орнамент праворуч), однакового розміру.
+   withT — у блоці є місце під фінальний напис. Коди такі великі, як
+   дозволяють ширина (R.orn) і висота робочої зони. */
+function layout(withQ,withT){
   var p=R.pads[R.fmt], Z0=Math.round(VH*p[0]/100), AV=VH*(1-p[1]/100)-Z0;
   var G1=40, G2=48, GQ=Math.round(VW*0.045);
   var Wmax=Math.round(VW*R.orn/100), nh=nameFs*1.3;
-  var wrapW=Math.min(Wmax,VW*0.8), fs=Math.round(VW>VH?VH*0.07:VW*0.09), lines=wrapEnd(fs,wrapW);
-  while(fs>40&&(lines.length>3||lines.some(function(t){return g.measureText(t).width>wrapW;}))){fs-=4;lines=wrapEnd(fs,wrapW);}
-  var lh=Math.round(fs*1.22), eh=lines.length?lines.length*lh:0;
+  var wrapW=Math.min(Wmax,VW*0.8), fs=Math.round((VW>VH?VH*0.07:VW*0.09)*R.endSize/100), lines=wrapEnd(fs,wrapW);
+  while(fs>30&&(lines.length>3||lines.some(function(t){return g.measureText(t).width>wrapW;}))){fs-=4;lines=wrapEnd(fs,wrapW);}
+  var lh=Math.round(fs*1.22), eh=(withT&&lines.length)?G2+lines.length*lh:0;
   var S=withQ?Math.floor((Wmax-GQ)/2):Wmax;
-  var total=nh+G1+S+(eh?G2+eh:0);
-  if(total>AV){S=Math.max(160,Math.floor(S-(total-AV)));total=nh+G1+S+(eh?G2+eh:0);}
+  var total=nh+G1+S+eh;
+  if(total>AV){S=Math.max(160,Math.floor(S-(total-AV)));total=nh+G1+S+eh;}
   var top=Z0+Math.max(0,Math.round((AV-total)/2));
   var gw=withQ?2*S+GQ:S, x0=(VW-gw)/2;
   return {top:top,nh:nh,S:S,xQ:x0,xO:withQ?x0+S+GQ:x0,oy:top+nh+G1,ey:top+nh+G1+S+G2,lh:lh,fs:fs,lines:lines};
 }
-function relayout(bl){fitName(bl);LQ=layout(true);LN=layout(false);}
+/* Чотири розкладки: з QR / без, з місцем під напис / без.
+   Якщо місце тримаємо з початку — «без напису» = «з написом». */
+function relayout(bl){
+  fitName(bl);
+  LQ1=layout(true,true); LN1=layout(false,true);
+  var keep=!!R.reserve[R.fmt];
+  LQ0=keep?LQ1:layout(true,false); LN0=keep?LN1:layout(false,false);
+}
 function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
 function mix(a,b,t){var o={};for(var k in a)o[k]=typeof a[k]==='number'?a[k]+(b[k]-a[k])*t:a[k];return o;}
 
@@ -3654,6 +3738,7 @@ function drawQR(x,y,S,alpha){
   g.moveTo(x+r,y); g.arcTo(x+S,y,x+S,y+S,r); g.arcTo(x+S,y+S,x,y+S,r);
   g.arcTo(x,y+S,x,y,r); g.arcTo(x,y,x+S,y,r); g.closePath();
   g.fill();
+  if(cr(bg,[255,255,255])<1.4){g.strokeStyle=rgbS(cN,.35);g.lineWidth=Math.max(2,S*0.006);g.stroke();}
   if(qrM){
     var N=qrM.length, qz=3, m=Math.floor(S/(N+qz*2)), ox=Math.round(x+(S-m*N)/2), oy=Math.round(y+(S-m*N)/2);
     g.fillStyle='#111';
@@ -3661,20 +3746,22 @@ function drawQR(x,y,S,alpha){
   }
   g.restore();
 }
+function clamp01(v){return Math.max(0,Math.min(1,v));}
 function paint(){
-  var e=ease(Math.max(0,Math.min(1,qm))), L=mix(LN,LQ,e);
+  var e=ease(clamp01(qm)), f=ease(clamp01(em));
+  var L=mix(mix(LN0,LQ0,e),mix(LN1,LQ1,e),f);
   g.setTransform(1,0,0,1,0,0); g.globalAlpha=1;
-  g.fillStyle='rgb('+bg.join(',')+')'; g.fillRect(0,0,VW,VH);
+  g.fillStyle=rgbS(bg); g.fillRect(0,0,VW,VH);
   g.textAlign='center'; g.textBaseline='middle';
   /* ім'я; «виділення» — як у текстовому редакторі перед видаленням */
   var ty=L.top+L.nh/2;
   g.font='700 '+nameFs+'px '+FAM;
   if(cur.sel&&cur.text){
     var sw=g.measureText(cur.text).width;
-    g.fillStyle=fg==='#fff'?'rgba(255,255,255,.32)':'rgba(0,0,0,.22)';
+    g.fillStyle=rgbS(cN,.3);
     g.fillRect(VW/2-sw/2-nameFs*0.06,ty-nameFs*0.62,sw+nameFs*0.12,nameFs*1.24);
   }
-  g.fillStyle=fg;
+  g.fillStyle=rgbS(cN);
   if(cur.text)g.fillText(cur.text,VW/2,ty);
   if(cur.caret&&((performance.now()-t0)%1000)<550){
     var w=cur.text?g.measureText(cur.text).width:0;
@@ -3688,10 +3775,12 @@ function paint(){
     g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
     g.drawImage(OFF,Math.round(x),Math.round(y),Math.round(dd),Math.round(dd));
   }
-  /* фінальний напис — плавно за 0,4 с */
+  /* фінальний напис — проявляється за 0,4 с; якщо орнамент спершу
+     поступається місцем — напис з'являється, коли місце звільнилося наполовину */
   if(cur.end){
-    g.globalAlpha=Math.min(1,(performance.now()-endT)/400);
-    g.fillStyle=fg; g.font='700 '+L.fs+'px '+FAM;
+    var delay=R.reserve[R.fmt]?0:R.endMove*500;
+    g.globalAlpha=clamp01((performance.now()-endT-delay)/400);
+    g.fillStyle=rgbS(cE); g.font='700 '+L.fs+'px '+FAM;
     L.lines.forEach(function(t,i){g.fillText(t,VW/2,L.ey+L.lh/2+i*L.lh);});
     g.globalAlpha=1;
   }
@@ -3700,7 +3789,7 @@ var raf=0;
 function loop(){paint();raf=requestAnimationFrame(loop);}
 
 function qrFor(t){if(R.qrMode==='link')return TainaQR.make(R.qrLink||'https://taina-ten.vercel.app');return t?TainaQR.make(t):null;}
-function setText(t,caret,withQR){D.single=t; build(); setBg(); cur.text=t; cur.caret=caret; if(withQR)qrM=qrFor(t);}
+function setText(t,caret,withQR){D.single=t; build(); cur.text=t; cur.caret=caret; if(withQR)qrM=qrFor(t);}
 
 /* ── 6. ВИГЛЯД, МІНІАТЮРИ ПАЛІТР, ПРЕВ'Ю ───────────────────────── */
 function applyPal(gi,ii){palG=gi;palI=ii;motif=PAL().mono?'none':R.motif;motifK=4;invert=!!R.neg;shape=R.shape;setLayers(1);}
@@ -3721,11 +3810,18 @@ function preview(){
   setFormat(); drawTiles(); applyLook();
   var bl=parseBlocks(), b=bl[0];
   relayout(bl);
+  var C=probe(b.t); setCols(C);
+  /* кружечки на кнопках «Колір тексту» — як колір виглядатиме в цій палітрі */
+  ['rs-nameCol','rs-endCol'].forEach(function(id){Array.prototype.forEach.call($(id).children,function(btn){
+    btn.querySelector('.dot').style.background=rgbS(pickCol(btn.dataset.v,C.P));});});
   qm=b.qr?1:0; setText(b.t,false,b.qr); if(!b.qr)qrM=null;
-  cur.end=true; cur.sel=false; endT=-1e9;
+  var fin=R.pvShow!=='type';
+  cur.end=fin; em=fin?1:0; cur.sel=false; endT=-1e9;
   paint();
   /* зменшена копія + заштриховані зони інтерфейсу */
-  var maxW=Math.min(innerWidth>=900?innerWidth*0.44:innerWidth-32, 900), maxH=innerWidth>=900?innerHeight*0.86:innerHeight*0.34;
+  /* розмір — за реальною шириною колонки, пропорції кадру не спотворюються */
+  var box=pv.parentNode.getBoundingClientRect().width||(innerWidth-32);
+  var maxW=Math.min(box,900), maxH=innerWidth>=900?innerHeight*0.86:innerHeight*0.34;
   var s=Math.min(maxW/VW,maxH/VH), dpr=Math.min(2,devicePixelRatio||1);
   pv.width=Math.round(VW*s*dpr); pv.height=Math.round(VH*s*dpr);
   pv.style.width=Math.round(VW*s)+'px'; pv.style.height=Math.round(VH*s)+'px';
@@ -3793,8 +3889,30 @@ function showDone(blob){
 
 /* ── 8. СЦЕНАРІЙ ──────────────────────────────────────────────── */
 var wait=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-function animQ(to,ms){return new Promise(function(res){var from=qm,s=performance.now();
-  (function st(){var t=Math.min(1,(performance.now()-s)/ms);qm=from+(to-from)*t;if(t<1)requestAnimationFrame(st);else res();})();});}
+/* плавна зміна числа від from до to за ms (set отримує поточне значення) */
+function tween(from,to,ms,set){return new Promise(function(res){var s=performance.now();
+  (function st(){var t=ms>0?Math.min(1,(performance.now()-s)/ms):1;set(from+(to-from)*t);if(t<1)requestAnimationFrame(st);else res();})();});}
+function animQ(to,ms){return tween(qm,to,ms,function(v){qm=v;});}
+/* плавна зміна кольорів тла й тексту (для «Асорті») */
+function animCols(C,ms){
+  var A={bg:bg.slice(),n:cN.slice(),e:cE.slice()};
+  return tween(0,1,ms,function(t){var k=ease(t);bg=lerpA(A.bg,C.bg,k);cN=lerpA(A.n,C.n,k);cE=lerpA(A.e,C.e,k);})
+    .then(function(){setCols(C);});
+}
+/* «Асорті»: палітра для кожного імені. Перше — вибрана; далі — з
+   перемішаного «мішечка», без повторів, поки не пройдуть усі. */
+function palPlan(n){
+  var all=[];PALS.forEach(function(g2,gi){g2.items.forEach(function(p,ii){all.push(gi+','+ii);});});
+  var plan=[R.pal], bag=[];
+  for(var i=1;i<n;i++){
+    if(!R.assort){plan.push(R.pal);continue;}
+    if(!bag.length){bag=all.filter(function(x){return x!==plan[i-1];});
+      for(var j=bag.length-1;j>0;j--){var r=Math.floor(Math.random()*(j+1)),tmp=bag[j];bag[j]=bag[r];bag[r]=tmp;}}
+    plan.push(bag.pop());
+  }
+  return plan;
+}
+function usePal(id){var p=id.split(',').map(Number);applyPal(p[0],p[1]);}
 var wake=null;
 async function run(){
   readForm();
@@ -3802,12 +3920,12 @@ async function run(){
   try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen');}catch(e){}
   if(R.snd)ac();
   setFormat(); applyLook();
-  var bl=parseBlocks();
-  /* колір тла заздалегідь — з першого імені */
-  D.single=bl[0].t; build(); setBg();
+  var bl=parseBlocks(), plan=palPlan(bl.length);
   try{if(document.fonts&&document.fonts.load)await document.fonts.load('700 100px Inter');}catch(e){}
   relayout(bl);
-  qm=bl[0].qr?1:0; qrM=bl[0].qr?qrFor(''):null;
+  /* кольори тла й тексту заздалегідь — з першого імені */
+  usePal(plan[0]); setCols(probe(bl[0].t));
+  qm=bl[0].qr?1:0; qrM=bl[0].qr?qrFor(''):null; em=0;
   D.single=''; build();
   cur={text:'',caret:false,end:false,sel:false}; t0=performance.now();
   setEl.style.display='none'; loop();
@@ -3821,6 +3939,12 @@ async function run(){
   cur.caret=true; t0=performance.now(); await wait(300);
   for(var i=0;i<bl.length;i++){
     var b=bl[i], ch=Array.from(b.t);
+    /* «Асорті»: слово стерте, кадр порожній — тло й текст плавно
+       перетікають у нову палітру */
+    if(i>0&&plan[i]!==plan[i-1]){
+      usePal(plan[i]); var C=probe(b.t); D.single=''; build();
+      await animCols(C,R.colFade*1000);
+    }
     /* QR з'являється між блоками (порожня картка, далі росте разом з орнаментом) */
     if(i>0&&b.qr&&qm<0.5){qrM=qrFor('');await animQ(1,R.qrFade*1000);}
     for(var j=1;j<=ch.length;j++){setText(ch.slice(0,j).join(''),true,b.qr);if(R.snd)typeClick();await wait(R.speed);}
@@ -3840,7 +3964,10 @@ async function run(){
       }
     }
   }
+  /* фінал: якщо місце під напис не тримали — орнамент зменшується,
+     звільняючи його, і напис проявляється */
   endT=performance.now(); cur.end=true;
+  if(R.reserve[R.fmt])em=1; else tween(0,1,R.endMove*1000,function(v){em=v;});
   await wait(R.endDur*1000);
   var blob=await recStop();
   try{if(wake)wake.release();}catch(e){}
