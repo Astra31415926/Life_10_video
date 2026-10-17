@@ -3306,6 +3306,8 @@ buildDeck();
      «Асорті» — кожне ім'я у випадковій палітрі.
      Місце під фінальний напис: тримати з початку або звільняти у фіналі
      (орнамент спершу максимальний, потім зменшується) — для кожного формату.
+     «Колекція» — орнамент після паузи злітає на стіну довкола центру разом
+     з ім'ям-підписом; у фіналі стіна заповнена, у центрі — фінальний напис.
      Нічого не зберігається в стан сайту, дотики ролик не зупиняють.
      ═══════════════════════════════════════════════════════════════════ -->
 <style>
@@ -3371,6 +3373,7 @@ html.reel-on,html.reel-on body{overflow:hidden!important;overscroll-behavior:non
   font:800 17px "JetBrains Mono",monospace;letter-spacing:.05em;display:flex;align-items:center;justify-content:center;
   text-decoration:none;padding:0 14px}
 #reel .btn.alt{background:transparent;color:#f2ece2;border:1px solid #c9a876}
+#reel .btn.mini{min-height:46px;font-size:14px}
 #reel-go{font-size:19px!important;letter-spacing:.08em}
 #reel .tip{font-size:12.5px;color:#b9ad9b;line-height:1.55}
 #reel-prev{display:block;max-height:46vh;max-width:100%;margin:0 auto;border-radius:10px;background:#000}
@@ -3462,15 +3465,18 @@ document.documentElement.classList.add('reel-on');
    соцмережі (пошук, підпис, кнопки). Для кожного формату — свої. */
 var FMT={tt:{w:1080,h:1920,uk:'TikTok<br>9:16'},ys:{w:1080,h:1920,uk:'Shorts<br>9:16'},yt:{w:1920,h:1080,uk:'YouTube<br>16:9'}};
 /* reserve — чи тримати місце під фінальний напис з самого початку.
-   Ні (YouTube) → орнамент спершу максимальний, а у фіналі зменшується. */
+   Ні (YouTube) → орнамент спершу максимальний, а у фіналі зменшується.
+   coll — режим «Колекція»: орнаменти злітаються на стіну довкола центру;
+   collStage — розмір орнаменту в центрі (% від звичайного). */
 var DEF={fmt:'tt',pads:{tt:[14,20],ys:[10,24],yt:[6,8]},reserve:{tt:true,ys:true,yt:false},
+  coll:{tt:false,ys:true,yt:true},collStage:{tt:55,ys:55,yt:95},fly:0.7,capSize:100,seed:1,
   names:'#Олена, Марія, Іван, Оксана, Андрій, Анна',speed:80,pause:0.8,erase:'select',
   pal:'0,1',motif:'rhomb',neg:false,shape:'cross',orn:88,nameMax:160,
   assort:false,colFade:0.3,
   nameCol:'ink1',endCol:'ink2',txtCon:3,
   qrMode:'text',qrLink:'https://taina-ten.vercel.app',qrFade:0.6,
   end:'Напиши своє ім\'я в коментарях 👇',endDur:2.5,endMove:0.6,endSize:100,cnt:3,snd:true,rec:true,pvShow:'end'};
-var PERFMT=['pads','reserve'];
+var PERFMT=['pads','reserve','coll','collStage'];
 var R=JSON.parse(JSON.stringify(DEF)),k;
 try{var sv=JSON.parse(localStorage.getItem('taina_reel')||'null');
   if(sv){for(k in DEF)if(k in sv&&PERFMT.indexOf(k)<0)R[k]=sv[k];
@@ -3504,7 +3510,7 @@ root.innerHTML=
   '<div id="reel-set"><div class="wrap">'+
    '<div class="pv"><canvas id="rs-pv"></canvas>'+
      seg('rs-pvShow',[['type','Під час друку'],['end','Фінал']])+
-     '<div class="pvcap">Прев\'ю першого імені · затемнено — зони інтерфейсу соцмережі</div></div>'+
+     '<div class="pvcap" id="rs-pvcap"></div></div>'+
    '<div class="ctl">'+
     '<h1>TAINA · Лабораторія роликів</h1>'+
     '<div class="sub">Імена друкуються по літері, орнамент росте наживо. Відео сторінка записує сама.</div>'+
@@ -3514,6 +3520,15 @@ root.innerHTML=
     '<label class="chk"><input type="checkbox" id="rs-reserve"><span>Тримати місце під фінальний напис з початку'+
       '<small>Вимкнено — орнамент увесь ролик максимальний, а у фіналі зменшується, звільняючи місце напису. '+
       'Для кожного формату окремо.</small></span></label>'+
+
+    '<h2>Колекція</h2>'+
+    '<label class="chk"><input type="checkbox" id="rs-coll"><span>Колекція — орнаменти злітаються на стіну'+
+      '<small>Після паузи орнамент зменшується й летить на своє місце разом з ім\'ям-підписом. '+
+      'Місця заповнюються від центру назовні, симетрично. У фіналі стіна заповнена, у центрі — фінальний напис. '+
+      'Для кожного формату окремо.</small></span></label>'+
+    sl('rs-collStage','Розмір орнаменту в центрі, %',30,100,1)+
+    sl('rs-fly','Політ на стіну, с',0.3,1.5,0.05)+
+    sl('rs-capSize','Розмір підписів, %',60,160,5)+
 
     '<h2>Текст</h2>'+
     '<label>Імена (через кому)<textarea id="rs-names" rows="2" spellcheck="false"></textarea>'+
@@ -3528,6 +3543,7 @@ root.innerHTML=
     '<label class="chk"><input type="checkbox" id="rs-assort"><span>Асорті — кожне ім\'я в іншій палітрі'+
       '<small>Перше ім\'я — у вибраній палітрі, далі випадково. Палітри не повторюються, поки не пройдуть усі.</small></span></label>'+
     sl('rs-colFade','Перехід кольору між іменами, с',0,1,0.05)+
+    '<button type="button" class="btn alt mini" id="rs-shuffle">🎲 Перемішати палітри</button>'+
     '<label>Мотив<select id="rs-motif">'+motOpts+'</select></label>'+
     '<label class="chk"><input type="checkbox" id="rs-neg">Негатив</label>'+
     '<label>Форма'+seg('rs-shape',[['cross','Хрестики'],['square','Квадрати'],['circle','Кружечки']])+'</label>'+
@@ -3568,12 +3584,13 @@ var pv=$('rs-pv'), pg=pv.getContext('2d');
 var VW=1080, VH=1920;
 
 /* ── 4. ПОЛЯ ФОРМИ ↔ НАЛАШТУВАННЯ ─────────────────────────────── */
-var NUMS=['speed','pause','endDur','endMove','endSize','cnt','orn','nameMax','qrFade','colFade','txtCon'];
+var NUMS=['speed','pause','endDur','endMove','endSize','cnt','orn','nameMax','qrFade','colFade','txtCon','fly','capSize'];
 function segSync(id,val){Array.prototype.forEach.call($(id).children,function(b){b.classList.toggle('on',b.dataset.v===val);});}
 function segBind(id,key){$(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
   R[key]=b.dataset.v;segSync(id,R[key]);if(key==='fmt')fillPads();changed();});segSync(id,R[key]);}
 /* поля, що свої для кожного формату */
-function fillPads(){var p=R.pads[R.fmt];$('rs-padTop').value=p[0];$('rs-padBot').value=p[1];$('rs-reserve').checked=!!R.reserve[R.fmt];}
+function fillPads(){var p=R.pads[R.fmt];$('rs-padTop').value=p[0];$('rs-padBot').value=p[1];$('rs-reserve').checked=!!R.reserve[R.fmt];
+  $('rs-coll').checked=!!R.coll[R.fmt];$('rs-collStage').value=R.collStage[R.fmt];}
 $('rs-names').value=R.names; $('rs-end').value=R.end; $('rs-qrLink').value=R.qrLink;
 NUMS.forEach(function(k){$('rs-'+k).value=R[k];});
 $('rs-motif').value=R.motif; $('rs-neg').checked=!!R.neg; $('rs-snd').checked=!!R.snd; $('rs-rec').checked=!!R.rec;
@@ -3585,11 +3602,14 @@ function syncPals(){Array.prototype.forEach.call($('rs-pals').children,function(
 $('rs-pals').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;R.pal=b.dataset.p;syncPals();changed();});
 if(!$('rs-pals').querySelector('[data-p="'+R.pal+'"]'))R.pal=DEF.pal;
 syncPals();
+/* нове перемішування палітр для «Асорті» — прев'ю й запис однакові */
+$('rs-shuffle').onclick=function(){R.seed=1+Math.floor(Math.random()*2147483646);changed();};
 
 function readForm(){
   R.names=$('rs-names').value; R.end=$('rs-end').value; R.qrLink=$('rs-qrLink').value.trim();
   NUMS.forEach(function(k){R[k]=+$('rs-'+k).value;});
   R.pads[R.fmt]=[+$('rs-padTop').value,+$('rs-padBot').value]; R.reserve[R.fmt]=$('rs-reserve').checked;
+  R.coll[R.fmt]=$('rs-coll').checked; R.collStage[R.fmt]=+$('rs-collStage').value;
   R.motif=$('rs-motif').value; R.neg=$('rs-neg').checked; R.snd=$('rs-snd').checked; R.rec=$('rs-rec').checked;
   R.assort=$('rs-assort').checked;
 }
@@ -3601,6 +3621,7 @@ function parseBlocks(){
     .filter(function(x){return x.t;});
   return b.length?b:[{t:'TAINA',qr:true}];
 }
+function collOn(){return !!R.coll[R.fmt];}
 function eraseTime(L){return R.erase==='letter'?L*R.speed/2+150:R.erase==='instant'?120:340;}
 function showVals(){
   $('rs-speed-v').textContent=R.speed+' мс'; $('rs-pause-v').textContent=R.pause.toFixed(1)+' с';
@@ -3612,13 +3633,20 @@ function showVals(){
   $('rs-txtCon-v').textContent=R.txtCon<=1?'точний колір':R.txtCon.toFixed(1);
   $('rs-padTop-v').textContent=R.pads[R.fmt][0]+'%'; $('rs-padBot-v').textContent=R.pads[R.fmt][1]+'%';
   $('rs-qrLinkL').style.display=R.qrMode==='link'?'':'none';
-  $('rs-colFade').closest('label').style.display=R.assort?'':'none';
-  $('rs-endMove').closest('label').style.display=R.reserve[R.fmt]?'none':'';
+  $('rs-collStage-v').textContent=R.collStage[R.fmt]+'%'; $('rs-fly-v').textContent=R.fly.toFixed(2)+' с';
+  $('rs-capSize-v').textContent=R.capSize+'%';
+  var co=collOn();
+  function vis(id,on){$(id).closest('label').style.display=on?'':'none';}
+  vis('rs-colFade',R.assort); $('rs-shuffle').style.display=R.assort?'':'none';
+  vis('rs-collStage',co); vis('rs-fly',co); vis('rs-capSize',co);
+  vis('rs-erase',!co); vis('rs-reserve',!co); vis('rs-endMove',!co&&!R.reserve[R.fmt]);
   var bl=parseBlocks(), t=0.3, nq=0;
   bl.forEach(function(b,i){var L=Array.from(b.t).length;if(b.qr)nq++;
-    t+=(L*R.speed+R.pause*1000+(i<bl.length-1?eraseTime(L):0))/1000;
+    t+=(L*R.speed+R.pause*1000)/1000;
+    t+=co?R.fly:(i<bl.length-1?eraseTime(L)/1000:0);
     if(i>0&&b.qr!==bl[i-1].qr)t+=R.qrFade;
     if(i>0&&R.assort)t+=R.colFade;});
+  if(co&&R.assort)t+=R.colFade;
   t+=R.endDur;
   $('rs-dur').innerHTML='Тривалість ролика ≈ <b>'+t.toFixed(1)+' с</b> · імен: <b>'+bl.length+'</b> · з QR: <b>'+nq+'</b>';
 }
@@ -3685,10 +3713,11 @@ addEventListener('resize',fitCv);
    отримав своє місце» (0…1): обидві плавно анімуються. */
 var cur={text:'',caret:false,end:false,sel:false}, qrM=null, qm=0, em=0, endT=0, t0=0;
 var nameFs=160, LQ0=null, LN0=null, LQ1=null, LN1=null;
-function fitName(bl){
+function fitName(bl,maxW){
+  maxW=maxW||VW*0.9;
   var fs=R.nameMax; g.font='700 '+fs+'px '+FAM;
   var mw=0;bl.forEach(function(b){mw=Math.max(mw,g.measureText(b.t).width+fs*0.2);});
-  if(mw>VW*0.9)fs*=VW*0.9/mw;
+  if(mw>maxW)fs*=maxW/mw;
   nameFs=Math.floor(fs);
 }
 function wrapEnd(fs,maxW){
@@ -3725,6 +3754,124 @@ function relayout(bl){
   LQ1=layout(true,true); LN1=layout(false,true);
   var keep=!!R.reserve[R.fmt];
   LQ0=keep?LQ1:layout(true,false); LN0=keep?LN1:layout(false,false);
+  if(collOn())layoutColl(bl);
+}
+
+/* ── КОЛЕКЦІЯ («стіна орнаментів») ───────────────────────────────
+   Сцена — центр кадру: ім'я + орнамент (або QR і орнамент поруч у тій самій
+   ширині). Довкола — сітка комірок «орнамент + підпис». Розмір комірки —
+   найбільший, за якого ВСІ імена вміщуються довкола сцени. Комірки
+   заповнюються від центру назовні: ближчі — раніше, ліва й права по черзі,
+   тож стіна росте симетрично, як сам орнамент. */
+var STG=null, LC0=null, LCQ=null, SL=null, CTA=null, wall=[], fly=null;
+function layoutColl(bl){
+  var p=R.pads[R.fmt], Z0=Math.round(VH*p[0]/100), AV=Math.round(VH*(1-p[1]/100))-Z0;
+  var Sc=Math.max(120,Math.round(layout(false,false).S*R.collStage[R.fmt]/100));
+  fitName(bl,Sc);                                   /* ім'я — не ширше за сцену */
+  var G1=Math.round(Math.min(VW,VH)*0.03), GQ=Math.round(Sc*0.06), nh=nameFs*1.3, h=nh+G1+Sc;
+  if(h>AV){Sc=Math.max(120,Sc-(h-AV));h=nh+G1+Sc;}
+  var top=Z0+Math.round((AV-h)/2), x0=Math.round((VW-Sc)/2);
+  STG={x:x0,y:top,w:Sc,h:h,S:Sc};
+  function lay(withQ){var S=withQ?Math.floor((Sc-GQ)/2):Sc;
+    return {top:top,nh:nh,S:S,xQ:x0,xO:withQ?x0+S+GQ:x0,oy:top+nh+G1+(Sc-S)/2,ey:0,lh:0,fs:0,lines:[]};}
+  LC0=lay(false); LCQ=lay(true);
+  /* комірки довкола сцени: ряди над і під сценою (на всю ширину) та
+     стовпчики ліворуч і праворуч (у смузі сцени). Ряди й стовпчики
+     відкладаються від країв сцени назовні — так місце використовується
+     щільно і симетрично. Розмір комірки — найбільший, за якого всі вміщуються. */
+  var N=bl.length, Z1=Z0+AV, mx=Math.round(VW*0.03), X0=mx, X1=VW-mx, gap=Math.round(Math.min(VW,VH)*0.018);
+  var capK=0.17*R.capSize/100, best=null, cmax=Math.round(Math.min(Sc*0.6,Math.min(VW,VH)*0.32));
+  function cells(c){
+    var cap=Math.round(c*capK), ch=c+cap, out=[], q, r, x, y;
+    var nc=Math.floor((X1-X0+gap)/(c+gap)), gx=X0+((X1-X0)-(nc*(c+gap)-gap))/2;
+    for(y=STG.y-gap-ch;y>=Z0-0.5;y-=ch+gap)for(q=0;q<nc;q++)out.push({x:gx+q*(c+gap),y:y});
+    for(y=STG.y+STG.h+gap;y+ch<=Z1+0.5;y+=ch+gap)for(q=0;q<nc;q++)out.push({x:gx+q*(c+gap),y:y});
+    var nr=Math.floor((STG.h+gap)/(ch+gap)), gy=STG.y+(STG.h-(nr*(ch+gap)-gap))/2;
+    for(x=STG.x-gap-c;x>=X0-0.5;x-=c+gap)for(r=0;r<nr;r++)out.push({x:x,y:gy+r*(ch+gap)});
+    for(x=STG.x+STG.w+gap;x+c<=X1+0.5;x+=c+gap)for(r=0;r<nr;r++)out.push({x:x,y:gy+r*(ch+gap)});
+    return {c:c,cap:cap,gap:gap,free:out};
+  }
+  for(var c=cmax;c>=40;c-=2){
+    var cs=cells(c);
+    if(cs.free.length>=N){best=cs;break;}
+    if(!best||cs.free.length>best.free.length)best=cs;
+  }
+  if(!best||!best.free.length){var c2=80;best={c:c2,cap:Math.round(c2*capK),gap:gap,free:[{x:X0,y:Z0}]};}
+  /* порядок: ближчі до краю сцени — раніше (стіна обростає сцену кільцем);
+     у кільці — від середини назовні; однакові — зверху вниз, ліва раніше
+     за праву: симетрично, по черзі */
+  var cx=VW/2, cy=STG.y+STG.h/2;
+  function d(a){var dx=Math.max(0,Math.abs(a.x+best.c/2-cx)-(STG.w+best.c)/2),
+      dy=Math.max(0,Math.abs(a.y+(best.c+best.cap)/2-cy)-(STG.h+best.c+best.cap)/2);
+    return Math.round(Math.hypot(dx,dy)/8);}
+  function e(a){return Math.round(Math.hypot(a.x+best.c/2-cx,a.y+(best.c+best.cap)/2-cy)/8);}
+  best.free.sort(function(a,b){return d(a)-d(b)||e(a)-e(b)||a.y-b.y||a.x-b.x;});
+  SL=best;
+  /* фінальний напис — у центрі, на місці сцени: якомога більший,
+     рядки рівні за довжиною */
+  var bw=bestWrap(R.end,Sc*0.92,STG.h,Math.round((VW>VH?VH*0.07:VW*0.09)*1.5*R.endSize/100),3);
+  CTA={fs:bw.fs,lh:Math.round(bw.fs*1.22),lines:bw.lines,cy:STG.y+STG.h/2};
+}
+/* розбити текст на 1…maxLines рядків рівної довжини й узяти найбільший
+   шрифт, з яким він вміщується в maxW×maxH. Явні переноси рядка — як є. */
+function bestWrap(text,maxW,maxH,fsMax,maxLines){
+  g.font='700 100px '+FAM;
+  var paras=text.split('\n').map(function(t){return t.trim();}).filter(Boolean);
+  if(!paras.length)return {fs:fsMax,lines:[]};
+  if(paras.length>1){
+    var w=Math.max.apply(null,paras.map(function(t){return g.measureText(t).width;}));
+    return {fs:Math.floor(Math.min(fsMax,100*maxW/w,maxH/(paras.length*1.22))),lines:paras};
+  }
+  var words=paras[0].split(/\s+/), n=words.length, sp=g.measureText(' ').width;
+  var ww=words.map(function(t){return g.measureText(t).width;});
+  function W2(a,b){var s2=0;for(var i=a;i<b;i++)s2+=ww[i];return s2+sp*(b-a-1);}
+  var best=null;
+  for(var k=1;k<=Math.min(maxLines,n);k++){
+    /* розбиття на k рядків з найкоротшим найдовшим рядком */
+    var dp=[], cut=[];
+    for(var j=0;j<=k;j++){dp.push(new Array(n+1).fill(Infinity));cut.push(new Array(n+1).fill(0));}
+    dp[0][0]=0;
+    for(j=1;j<=k;j++)for(var i=1;i<=n;i++)for(var m=j-1;m<i;m++){
+      var v=Math.max(dp[j-1][m],W2(m,i));if(v<dp[j][i]){dp[j][i]=v;cut[j][i]=m;}}
+    var lines=[], e2=n;
+    for(j=k;j>=1;j--){var m2=cut[j][e2];lines.unshift(words.slice(m2,e2).join(' '));e2=m2;}
+    var fs=Math.floor(Math.min(fsMax,100*maxW/dp[k][n],maxH/(k*1.22)));
+    /* більше рядків — лише якщо шрифт помітно більший (на 25 %) */
+    if(!best||fs>best.fs*1.25)best={fs:fs,lines:lines};
+  }
+  return best;
+}
+/* знімок орнаменту з OFF — для стіни; кеш, щоб прев'ю не перебудовувало зайве */
+var tCache={}, tCacheN=0;
+function snapOFF(){var c=document.createElement('canvas');c.width=c.height=560;var x=c.getContext('2d');
+  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';if(OFF.width)x.drawImage(OFF,0,0,560,560);return {img:c,W:W};}
+function capFit(name){var f=SL.cap*0.8;g.font='700 '+f+'px '+FAM;var w=g.measureText(name).width,mw=SL.c+SL.gap*0.8;
+  return Math.max(8,Math.floor(w>mw?f*mw/w:f));}
+/* tile: {img,W,name,slot,capFs}. built=true — орнамент уже в OFF */
+function makeTile(name,i,built){
+  var key=[name,palG,palI,R.motif,R.neg,R.shape].join('|'), sn=tCache[key];
+  if(!sn){if(!built){D.single=name;build();}sn=snapOFF();
+    if(++tCacheN>300){tCache={};tCacheN=0;} tCache[key]=sn;}
+  return {img:sn.img,W:sn.W,name:name,slot:SL.free[i%SL.free.length],capFs:capFit(name)};
+}
+/* рамка орнаменту в комірці: в «Асорті» — трохи менша, довкола кольорова латка-поле */
+function tileF(W2,c){return R.assort?c*1.04*(W2+6)/(W2+10):c;}
+function drawOrn(img,W2,cx,cy,F){var dd=F*(W2+10)/(W2+6);g.drawImage(img,cx-dd/2,cy-dd/2,dd,dd);}
+/* комірка: зверху підпис-ім'я, під ним орнамент — як на сцені */
+function drawWall(t){
+  var s=t.slot, c=SL.c, cx=s.x+c/2;
+  drawOrn(t.img,t.W,cx,s.y+SL.cap+c/2,tileF(t.W,c));
+  g.fillStyle=rgbS(cN); g.font='700 '+t.capFs+'px '+FAM;
+  g.fillText(t.name,cx,s.y+SL.cap*0.45);
+}
+function easeIO(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+function drawFly(){
+  var k=easeIO(clamp01(fly.t)), s=fly.slot, c=SL.c, l=function(a,b){return a+(b-a)*k;};
+  var x=l(fly.cx0,s.x+c/2), y=l(fly.cy0,s.y+SL.cap+c/2);
+  drawOrn(fly.img,fly.W,x,y,l(fly.F0,tileF(fly.W,c)));
+  /* ім'я летить разом з орнаментом — увесь час над ним — і стає підписом */
+  g.fillStyle=rgbS(cN); g.font='700 '+l(nameFs,fly.capFs)+'px '+FAM;
+  g.fillText(fly.name,x,y-l(fly.cy0-fly.ny0,c/2+SL.cap*0.55));
 }
 function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
 function mix(a,b,t){var o={};for(var k in a)o[k]=typeof a[k]==='number'?a[k]+(b[k]-a[k])*t:a[k];return o;}
@@ -3748,11 +3895,14 @@ function drawQR(x,y,S,alpha){
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function paint(){
-  var e=ease(clamp01(qm)), f=ease(clamp01(em));
-  var L=mix(mix(LN0,LQ0,e),mix(LN1,LQ1,e),f);
+  var co=collOn(), e=ease(clamp01(qm)), f=ease(clamp01(em));
+  var L=co?mix(LC0,LCQ,e):mix(mix(LN0,LQ0,e),mix(LN1,LQ1,e),f);
   g.setTransform(1,0,0,1,0,0); g.globalAlpha=1;
   g.fillStyle=rgbS(bg); g.fillRect(0,0,VW,VH);
   g.textAlign='center'; g.textBaseline='middle';
+  g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
+  /* стіна колекції */
+  if(co)wall.forEach(drawWall);
   /* ім'я; «виділення» — як у текстовому редакторі перед видаленням */
   var ty=L.top+L.nh/2;
   g.font='700 '+nameFs+'px '+FAM;
@@ -3775,9 +3925,18 @@ function paint(){
     g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
     g.drawImage(OFF,Math.round(x),Math.round(y),Math.round(dd),Math.round(dd));
   }
+  /* політ на стіну */
+  if(co&&fly)drawFly();
+  /* колекція: фінальний напис — у центрі, на місці сцени */
+  if(co&&cur.end){
+    g.globalAlpha=clamp01((performance.now()-endT)/400);
+    g.fillStyle=rgbS(cE); g.font='700 '+CTA.fs+'px '+FAM;
+    CTA.lines.forEach(function(t,i){g.fillText(t,VW/2,CTA.cy+(i-(CTA.lines.length-1)/2)*CTA.lh);});
+    g.globalAlpha=1;
+  }
   /* фінальний напис — проявляється за 0,4 с; якщо орнамент спершу
      поступається місцем — напис з'являється, коли місце звільнилося наполовину */
-  if(cur.end){
+  if(!co&&cur.end){
     var delay=R.reserve[R.fmt]?0:R.endMove*500;
     g.globalAlpha=clamp01((performance.now()-endT-delay)/400);
     g.fillStyle=rgbS(cE); g.font='700 '+L.fs+'px '+FAM;
@@ -3814,9 +3973,22 @@ function preview(){
   /* кружечки на кнопках «Колір тексту» — як колір виглядатиме в цій палітрі */
   ['rs-nameCol','rs-endCol'].forEach(function(id){Array.prototype.forEach.call($(id).children,function(btn){
     btn.querySelector('.dot').style.background=rgbS(pickCol(btn.dataset.v,C.P));});});
-  qm=b.qr?1:0; setText(b.t,false,b.qr); if(!b.qr)qrM=null;
   var fin=R.pvShow!=='type';
-  cur.end=fin; em=fin?1:0; cur.sel=false; endT=-1e9;
+  wall=[]; fly=null; cur.sel=false; endT=-1e9;
+  $('rs-pvcap').textContent=(collOn()?(fin?'Фінал: уся стіна':'Останнє ім\'я в центрі, решта вже на стіні'):'Прев\'ю першого імені')+
+    ' · затемнено — зони інтерфейсу соцмережі';
+  if(collOn()){
+    /* колекція: «Фінал» — повна стіна й напис; «Під час друку» — останнє ім'я
+       в центрі, усі попередні вже на стіні */
+    var plan=palPlan(bl.length), n=fin?bl.length:bl.length-1;
+    for(var i=0;i<n;i++){usePal(plan[i]);wall.push(makeTile(bl[i].t,i));}
+    if(fin){applyLook();setCols(C);qm=0;qrM=null;D.single='';build();cur={text:'',caret:false,end:true,sel:false};}
+    else{var bz=bl[bl.length-1];usePal(plan[bl.length-1]);setCols(probe(bz.t));
+      qm=bz.qr?1:0;setText(bz.t,false,bz.qr);if(!bz.qr)qrM=null;cur.end=false;}
+  }else{
+    qm=b.qr?1:0; setText(b.t,false,b.qr); if(!b.qr)qrM=null;
+    cur.end=fin; em=fin?1:0;
+  }
   paint();
   /* зменшена копія + заштриховані зони інтерфейсу */
   /* розмір — за реальною шириною колонки, пропорції кадру не спотворюються */
@@ -3901,13 +4073,15 @@ function animCols(C,ms){
 }
 /* «Асорті»: палітра для кожного імені. Перше — вибрана; далі — з
    перемішаного «мішечка», без повторів, поки не пройдуть усі. */
+function rng(seed){var a=seed>>>0;return function(){a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);
+  t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};}
 function palPlan(n){
   var all=[];PALS.forEach(function(g2,gi){g2.items.forEach(function(p,ii){all.push(gi+','+ii);});});
-  var plan=[R.pal], bag=[];
+  var plan=[R.pal], bag=[], rnd=rng(R.seed||1);
   for(var i=1;i<n;i++){
     if(!R.assort){plan.push(R.pal);continue;}
     if(!bag.length){bag=all.filter(function(x){return x!==plan[i-1];});
-      for(var j=bag.length-1;j>0;j--){var r=Math.floor(Math.random()*(j+1)),tmp=bag[j];bag[j]=bag[r];bag[r]=tmp;}}
+      for(var j=bag.length-1;j>0;j--){var r=Math.floor(rnd()*(j+1)),tmp=bag[j];bag[j]=bag[r];bag[r]=tmp;}}
     plan.push(bag.pop());
   }
   return plan;
@@ -3925,7 +4099,8 @@ async function run(){
   relayout(bl);
   /* кольори тла й тексту заздалегідь — з першого імені */
   usePal(plan[0]); setCols(probe(bl[0].t));
-  qm=bl[0].qr?1:0; qrM=bl[0].qr?qrFor(''):null; em=0;
+  var co=collOn();
+  qm=bl[0].qr?1:0; qrM=bl[0].qr?qrFor(''):null; em=0; wall=[]; fly=null;
   D.single=''; build();
   cur={text:'',caret:false,end:false,sel:false}; t0=performance.now();
   setEl.style.display='none'; loop();
@@ -3950,6 +4125,21 @@ async function run(){
     for(var j=1;j<=ch.length;j++){setText(ch.slice(0,j).join(''),true,b.qr);if(R.snd)typeClick();await wait(R.speed);}
     cur.caret=false;
     await wait(R.pause*1000);
+    /* КОЛЕКЦІЯ: орнамент зменшується й летить на своє місце, ім'я — з ним */
+    if(co){
+      var t=makeTile(b.t,i,true), Lc=mix(LC0,LCQ,ease(clamp01(qm)));
+      fly={img:t.img,W:t.W,name:t.name,slot:t.slot,capFs:t.capFs,
+        cx0:Lc.xO+Lc.S/2,cy0:Lc.oy+Lc.S/2,F0:Lc.S,ny0:Lc.top+Lc.nh/2,t:0};
+      cur.text=''; cur.caret=false;
+      var nextQ=i<bl.length-1&&bl[i+1].qr, pr=[tween(0,1,R.fly*1000,function(v){fly.t=v;})];
+      if(qm>0.5&&!nextQ)pr.push(animQ(0,Math.min(R.qrFade,R.fly)*1000));
+      else if(qm>0.5)qrM=qrFor('');
+      if(R.snd)tone(520,.12,.04,'sine');
+      await Promise.all(pr);
+      wall.push(t); fly=null; if(qm<0.5)qrM=null;
+      cur.caret=i<bl.length-1; t0=performance.now();
+      continue;
+    }
     /* наступний блок без QR: QR іде, орнамент виїжджає в центр і росте —
        ще до стирання слова */
     if(i<bl.length-1&&b.qr&&!bl[i+1].qr){await animQ(0,R.qrFade*1000);qrM=null;b={t:b.t,qr:false};}
@@ -3964,6 +4154,9 @@ async function run(){
       }
     }
   }
+  /* колекція + «Асорті»: у фіналі тло повертається до вибраної палітри */
+  if(co&&R.assort&&plan[bl.length-1]!==plan[0]){usePal(plan[0]);var Cf=probe(bl[0].t);D.single='';build();
+    await animCols(Cf,R.colFade*1000);}
   /* фінал: якщо місце під напис не тримали — орнамент зменшується,
      звільняючи його, і напис проявляється */
   endT=performance.now(); cur.end=true;
